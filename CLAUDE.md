@@ -2,56 +2,90 @@
 
 A multi-component system for displaying DAW/track information and enabling AI-assisted music production:
 
-1. **Skipper** - Rust CLAP/VST3 plugin (nih-plug) with egui GUI
-2. **Gilligan** - Java Bitwig Controller Extension with MCP Server
-3. **skipper-hub** (planned) - IPC daemon for cross-component communication
-4. **skipper-cli** (planned) - CLI tool for Claude Code integration
+1. **Skipper** - Rust CLAP/VST3 plugin (nih-plug) with egui GUI - one instance per track
+2. **Gilligan** - Java Bitwig Controller Extension with MCP Server - acts as central hub
 
 ## Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
 │                         Claude Code (Opus 4.5)                      │
-│                    "Start playback on Bitwig..."                    │
+│              "Load bass program on Track 2, drums on Track 3,       │
+│               commit on next beat 1..."                             │
 └──────────────────────────────┬──────────────────────────────────────┘
                                │
                                ▼ MCP over HTTP
 ┌─────────────────────────────────────────────────────────────────────┐
-│                     Gilligan MCP Server                             │
+│                     Gilligan (Central Hub)                          │
 │                 http://localhost:61170/mcp                          │
 │                                                                     │
-│   Token-Optimized Tools (7 tools, ~70% less overhead than WigAI):   │
-│   • transport_play     - Start playback                             │
-│   • transport_stop     - Stop playback                              │
-│   • transport_record   - Toggle recording                           │
-│   • get_transport      - Get tempo, position, status                │
-│   • list_tracks        - List all tracks                            │
-│   • get_selected_track - Get selected track info                    │
-│   • get_selected_device - Get selected device info                  │
+│   MCP Tools:                      Plugin Registry:                  │
+│   • transport_*                   • Skipper instances register      │
+│   • list_tracks                   • Track ID ↔ Plugin UUID map      │
+│   • stage_program                 • Broadcast commit signals        │
+│   • commit_programs               • Real track IDs from Bitwig API  │
 └──────────────────────────────┬──────────────────────────────────────┘
                                │
-                               ▼
-┌─────────────────────────────────────────────────────────────────────┐
-│                     Bitwig Studio                                   │
-│                                                                     │
-│   ┌───────────────┐                    ┌───────────────┐            │
-│   │   Skipper     │                    │   Gilligan    │            │
-│   │  (CLAP/VST3)  │                    │ (Bitwig Ext)  │            │
-│   │               │                    │               │            │
-│   │ • Host info   │                    │ • Host info   │            │
-│   │ • Track info* │                    │ • Track info  │            │
-│   │ • Transport   │                    │ • Transport   │            │
-│   │ • MIDI emit   │                    │ • Device chain│            │
-│   └───────────────┘                    │ • All tracks  │            │
-│          │                             │ • MCP Server  │            │
-│          ▼                             └───────────────┘            │
-│   ┌─────────────────┐                                               │
-│   │  DAW Track      │                                               │
-│   │  (instruments,  │                                               │
-│   │   effects)      │                                               │
-│   └─────────────────┘                                               │
-└─────────────────────────────────────────────────────────────────────┘
+        ┌──────────────────────┼──────────────────────┐
+        │                      │                      │
+        ▼                      ▼                      ▼
+┌───────────────┐      ┌───────────────┐      ┌───────────────┐
+│  Skipper #1   │      │  Skipper #2   │      │  Skipper #3   │
+│  (Track: Bass)│      │ (Track: Drums)│      │ (Track: Lead) │
+│               │      │               │      │               │
+│ • UUID: abc   │      │ • UUID: def   │      │ • UUID: ghi   │
+│ • Staged MIDI │      │ • Staged MIDI │      │ • Staged MIDI │
+│ • Beat-sync   │      │ • Beat-sync   │      │ • Beat-sync   │
+└───────┬───────┘      └───────┬───────┘      └───────┬───────┘
+        │                      │                      │
+        ▼                      ▼                      ▼
+   [ Bass Synth ]        [ Drum Kit ]          [ Lead Synth ]
 ```
+
+## Why Both Plugin AND Controller Are Needed
+
+**Gilligan (Controller) provides:**
+- Full Bitwig API access (real track IDs, all tracks, devices, clips)
+- MCP server for Claude Code
+- Central coordination point
+- Can't do sample-accurate beat sync
+
+**Skipper (Plugin) provides:**
+- Per-track presence in device chain
+- Sample-accurate `process()` callback for beat detection
+- Local buffer to stage MIDI programs
+- Synchronized beat-1 release across all instances
+- MIDI output to downstream instruments
+
+**Key Use Case: Beat-Synced Multi-Track Commit**
+1. Claude Code → Gilligan: "Stage bass on Track 2, drums on Track 3"
+2. Gilligan → Skipper instances: "Here's your program, stage it"
+3. Each Skipper buffers notes locally (not playing yet)
+4. Claude Code → Gilligan: "Commit"
+5. Gilligan → Skipper instances: "Commit on next beat 1"
+6. Each Skipper watches transport in `process()` callback
+7. On beat 1 → ALL Skippers emit MIDI simultaneously
+
+**This requires plugins because:**
+- `track.playNote()` in controller API plays immediately (no staging)
+- No sample-accurate beat detection in controller API
+- Synchronized release needs audio-thread timing
+
+## Plugin Instance Identification
+
+**Challenge:** Neither CLAP nor VST3 provide unique instance IDs or track IDs.
+
+CLAP track-info extension only provides:
+- Track name (not unique - multiple tracks can share names)
+- Track color
+- Track type flags (master/return/bus)
+- NO track ID, NO UUID
+
+**Solution:**
+1. Each Skipper generates its own UUID on instantiation
+2. Skipper registers with Gilligan: "I'm UUID X, on track named Y with color Z"
+3. Gilligan uses Bitwig API to find matching track → correlates UUID to real track ID
+4. Gilligan maintains UUID ↔ Track ID mapping
 
 ## MCP Server Token Optimization
 
