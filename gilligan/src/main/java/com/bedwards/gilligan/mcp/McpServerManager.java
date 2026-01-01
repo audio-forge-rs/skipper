@@ -53,39 +53,61 @@ public class McpServerManager {
     public void start() throws Exception {
         host.println("Gilligan MCP: Starting server on port " + port);
 
-        // Create transport provider for SSE communication
-        ObjectMapper objectMapper = new ObjectMapper();
-        HttpServletSseServerTransportProvider transportProvider =
-            new HttpServletSseServerTransportProvider(objectMapper, "/mcp", "/sse");
+        try {
+            // Create transport provider for SSE communication
+            ObjectMapper objectMapper = new ObjectMapper();
+            host.println("Gilligan MCP: Creating SSE transport (message=/mcp, sse=/sse)");
+            HttpServletSseServerTransportProvider transportProvider =
+                new HttpServletSseServerTransportProvider(objectMapper, "/mcp", "/sse");
 
-        // Build MCP server
-        mcpServer = McpServer.sync(transportProvider)
-            .serverInfo("Gilligan", "0.1.0")
-            .capabilities(McpSchema.ServerCapabilities.builder()
-                .tools(true)
-                .resources(false, false)
-                .prompts(false)
-                .build())
-            .build();
+            // Build MCP server
+            host.println("Gilligan MCP: Building MCP server...");
+            mcpServer = McpServer.sync(transportProvider)
+                .serverInfo("Gilligan", "0.1.0")
+                .capabilities(McpSchema.ServerCapabilities.builder()
+                    .tools(true)
+                    .resources(false, false)
+                    .prompts(false)
+                    .build())
+                .build();
 
-        // Register tools
-        registerTools();
+            // Register tools
+            host.println("Gilligan MCP: Registering tools...");
+            registerTools();
+            host.println("Gilligan MCP: " + getToolCount() + " tools registered");
 
-        // Create and configure Jetty server
-        jettyServer = new Server(new QueuedThreadPool());
-        ServerConnector connector = new ServerConnector(jettyServer);
-        connector.setPort(port);
-        jettyServer.addConnector(connector);
+            // Create and configure Jetty server
+            host.println("Gilligan MCP: Configuring Jetty server...");
+            jettyServer = new Server(new QueuedThreadPool());
+            ServerConnector connector = new ServerConnector(jettyServer);
+            connector.setPort(port);
+            jettyServer.addConnector(connector);
 
-        // Set up servlet context
-        ServletContextHandler context = new ServletContextHandler();
-        context.setContextPath("/");
-        context.addServlet(new ServletHolder(transportProvider), "/*");
-        jettyServer.setHandler(context);
+            // Set up servlet context
+            ServletContextHandler context = new ServletContextHandler();
+            context.setContextPath("/");
+            context.addServlet(new ServletHolder(transportProvider), "/*");
+            jettyServer.setHandler(context);
 
-        // Start the server
-        jettyServer.start();
-        host.println("Gilligan MCP: Server running at http://localhost:" + port + "/mcp");
+            // Start the server
+            jettyServer.start();
+            host.println("Gilligan MCP: Server running at http://localhost:" + port + "/mcp");
+            host.println("Gilligan MCP: SSE endpoint at http://localhost:" + port + "/sse");
+            host.println("Gilligan MCP: Claude Code config should use: {\"url\": \"http://localhost:" + port + "/sse\", \"transport\": \"sse\"}");
+        } catch (Exception e) {
+            host.errorln("Gilligan MCP: FAILED to start server: " + e.getClass().getName() + ": " + e.getMessage());
+            for (StackTraceElement ste : e.getStackTrace()) {
+                if (ste.getClassName().contains("gilligan") || ste.getClassName().contains("mcp")) {
+                    host.errorln("  at " + ste);
+                }
+            }
+            throw e;
+        }
+    }
+
+    private int getToolCount() {
+        // Count of registered tools
+        return 9; // transport(4) + track(4) + device(1)
     }
 
     private void registerTools() {
@@ -106,18 +128,29 @@ public class McpServerManager {
     }
 
     public void stop() {
+        host.println("Gilligan MCP: Stopping server...");
         try {
+            if (jettyServer != null) {
+                host.println("Gilligan MCP: Stopping Jetty server...");
+                jettyServer.stop();
+                jettyServer.join(); // Wait for full shutdown
+                jettyServer = null;
+                host.println("Gilligan MCP: Jetty server stopped");
+            }
             if (mcpServer != null) {
+                host.println("Gilligan MCP: Closing MCP server...");
                 mcpServer.close();
                 mcpServer = null;
+                host.println("Gilligan MCP: MCP server closed");
             }
-            if (jettyServer != null) {
-                jettyServer.stop();
-                jettyServer = null;
-            }
-            host.println("Gilligan MCP: Server stopped");
+            host.println("Gilligan MCP: Server stopped successfully");
         } catch (Exception e) {
-            host.errorln("Gilligan MCP: Error stopping server: " + e.getMessage());
+            host.errorln("Gilligan MCP: Error stopping server: " + e.getClass().getName() + ": " + e.getMessage());
+            for (StackTraceElement ste : e.getStackTrace()) {
+                if (ste.getClassName().contains("gilligan") || ste.getClassName().contains("jetty")) {
+                    host.errorln("  at " + ste);
+                }
+            }
         }
     }
 

@@ -44,7 +44,7 @@ public class GilliganExtensionDefinition extends ControllerExtensionDefinition {
 
     @Override
     public String getHardwareModel() {
-        return "Gilligan Info Display";
+        return "Gilligan";
     }
 
     @Override

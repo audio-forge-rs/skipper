@@ -74,3 +74,14 @@ Following Anthropic's MCP best practices:
 - Concise descriptions: ~10 words per tool
 - Filtered responses: Return only essential data
 - Progressive disclosure ready: Can add `search_tools` meta-tool if needed
+
+## Network Access
+
+Java extensions have **full network access**:
+- HTTP servers (Jetty) - what we use for MCP
+- WebSocket, OSC (UDP), raw TCP/UDP
+- Any Java networking library
+
+**Thread safety warning:** API calls from outside Control Surface thread may be unsafe.
+
+**Port binding:** Ensure proper `stop()` with `jettyServer.join()` before restart to release port.

@@ -116,6 +116,30 @@ Claude Code MCP config (`~/.claude/mcp.json`):
 }
 ```
 
+### Network Access in Controller Extensions
+
+**Java Extensions (.bwextension) - Full Access:**
+- HTTP servers (Jetty, etc.) - what we use
+- WebSocket servers
+- OSC (UDP) - what DrivenByMoss uses
+- Raw TCP/UDP sockets
+- Any Java networking library
+
+**JavaScript Extensions (.control.js) - Limited:**
+- No native HTTP/WebSocket
+- Raw UDP/TCP via Java interop
+- Typically need external bridge (Node.js)
+
+**Security Notes:**
+- No sandboxing - full Java access
+- Users must allow firewall ports
+- Thread safety: API calls from non-Control Surface thread may be unsafe
+
+**Examples:**
+- [WigAI](https://github.com/fabb/WigAI) - HTTP + MCP
+- [bitwig-websocket-rpc](https://github.com/jhorology/bitwig-websocket-rpc) - WebSocket + JSON-RPC
+- [DrivenByMoss](https://github.com/git-moss/DrivenByMoss) - OSC (UDP)
+
 ## Key Resources
 
 ### Official
