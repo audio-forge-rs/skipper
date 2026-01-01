@@ -239,7 +239,7 @@ impl Plugin for Skipper {
     const NAME: &'static str = "Skipper";
     const VENDOR: &'static str = "Audio Forge RS";
     const URL: &'static str = "https://audio-forge-rs.github.io/";
-    const EMAIL: &'static str = "";
+    const EMAIL: &'static str = "brian.mabry.edwards@gmail.com";
     const VERSION: &'static str = env!("CARGO_PKG_VERSION");
     const AUDIO_IO_LAYOUTS: &'static [AudioIOLayout] = &[
         AudioIOLayout {
