@@ -426,6 +426,29 @@ if new_info != state.track_info {
 - Use `gh` CLI for GitHub operations
 - Commit and push changes frequently
 
+## Forked Dependencies
+
+We maintain forks of key dependencies under the [audio-forge-rs](https://github.com/audio-forge-rs) organization:
+
+### nih-plug (audio-forge-rs/nih-plug)
+- **Why:** Added CLAP track-info extension support, Arc-based track info caching
+- **Branch:** `main`
+- **Key additions:**
+  - `InitContext::track_info()` - CLAP track-info extension
+  - `ProcessContext::track_info()` - Arc<TrackInfo> for audio thread safety
+  - Cached track info updated via CLAP `changed()` callback
+
+### baseview (audio-forge-rs/baseview)
+- **Why:** Fixed null pointer crash in macOS view initialization
+- **Branch:** `fix-null-window-crash`
+- **Fix:** Added null check in `become_first_responder` before calling `isKeyWindow`
+- **Location:** `nih-plug/nih_plug_egui/Cargo.toml` references this fork
+
+### egui-baseview (audio-forge-rs/egui-baseview)
+- **Why:** Updated to use our forked baseview with null window fix
+- **Branch:** `fix-null-window-crash`
+- **Change:** Updated baseview dependency to audio-forge-rs/baseview
+
 ## Common Issues
 
 ### Skipper Plugin
