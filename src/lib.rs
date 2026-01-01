@@ -7,6 +7,14 @@ use std::sync::Arc;
 /// Global counter for unique plugin instance IDs
 static INSTANCE_COUNTER: AtomicU32 = AtomicU32::new(0);
 
+/// Which tab is currently selected
+#[derive(Clone, Copy, PartialEq, Eq)]
+#[repr(u8)]
+enum Tab {
+    Live = 0,
+    Info = 1,
+}
+
 /// Transport state from process context
 #[derive(Default, Clone)]
 struct TransportState {
@@ -31,6 +39,7 @@ struct SharedState {
     sample_rate: f32,
     buffer_size: u32,
     plugin_api: PluginApi,
+    current_tab: Tab,
 }
 
 impl Default for SharedState {
@@ -42,6 +51,7 @@ impl Default for SharedState {
             sample_rate: 44100.0,
             buffer_size: 512,
             plugin_api: PluginApi::Clap,
+            current_tab: Tab::Live,
         }
     }
 }
@@ -212,6 +222,140 @@ fn build_info_text(shared: &SharedState) -> String {
     lines.join("\n")
 }
 
+/// Render the live dynamic tab with visual elements
+fn render_live_tab(ui: &mut egui::Ui, shared: &SharedState) {
+    egui::ScrollArea::vertical()
+        .auto_shrink([false, false])
+        .show(ui, |ui| {
+            // Track section with color
+            ui.heading("Track");
+            ui.add_space(4.0);
+
+            if let Some(ref track) = shared.track_info {
+                // Track color bar
+                if let Some((r, g, b)) = track.color {
+                    let color = egui::Color32::from_rgb(r, g, b);
+                    let (rect, _) = ui.allocate_exact_size(
+                        egui::vec2(ui.available_width(), 24.0),
+                        egui::Sense::hover(),
+                    );
+                    ui.painter().rect_filled(rect, 4.0, color);
+
+                    // Track name on color bar
+                    let track_name = track.name.as_deref().unwrap_or("(unnamed)");
+                    let text_color = if (r as u32 + g as u32 + b as u32) > 384 {
+                        egui::Color32::BLACK
+                    } else {
+                        egui::Color32::WHITE
+                    };
+                    ui.painter().text(
+                        rect.center(),
+                        egui::Align2::CENTER_CENTER,
+                        track_name,
+                        egui::FontId::proportional(16.0),
+                        text_color,
+                    );
+                } else {
+                    let track_name = track.name.as_deref().unwrap_or("(unnamed)");
+                    ui.label(egui::RichText::new(track_name).size(18.0).strong());
+                }
+
+                ui.add_space(4.0);
+
+                // Track type badge
+                let track_type = if track.is_for_master {
+                    "Master"
+                } else if track.is_for_return_track {
+                    "Return"
+                } else if track.is_for_bus {
+                    "Bus"
+                } else {
+                    "Track"
+                };
+                ui.label(format!("Type: {}", track_type));
+            } else {
+                ui.label("(No track info - requires CLAP)");
+            }
+
+            ui.add_space(16.0);
+            ui.separator();
+            ui.add_space(8.0);
+
+            // Transport section
+            ui.heading("Transport");
+            ui.add_space(8.0);
+
+            // Play/Stop/Record status with visual indicators
+            ui.horizontal(|ui| {
+                let play_color = if shared.transport.playing {
+                    egui::Color32::from_rgb(0, 200, 0)
+                } else {
+                    egui::Color32::GRAY
+                };
+                let rec_color = if shared.transport.recording {
+                    egui::Color32::from_rgb(255, 50, 50)
+                } else {
+                    egui::Color32::GRAY
+                };
+                let loop_color = if shared.transport.loop_active {
+                    egui::Color32::from_rgb(100, 150, 255)
+                } else {
+                    egui::Color32::GRAY
+                };
+
+                ui.label(egui::RichText::new("PLAY").color(play_color).strong());
+                ui.label(egui::RichText::new("REC").color(rec_color).strong());
+                ui.label(egui::RichText::new("LOOP").color(loop_color).strong());
+            });
+
+            ui.add_space(8.0);
+
+            // Tempo and time signature
+            ui.horizontal(|ui| {
+                if let Some(tempo) = shared.transport.tempo {
+                    ui.label(egui::RichText::new(format!("{:.1} BPM", tempo)).size(24.0).strong());
+                }
+                if let (Some(num), Some(den)) = (shared.transport.time_sig_numerator, shared.transport.time_sig_denominator) {
+                    ui.label(egui::RichText::new(format!("{}/{}", num, den)).size(20.0));
+                }
+            });
+
+            ui.add_space(8.0);
+
+            // Position
+            if let Some(beats) = shared.transport.pos_beats {
+                let time_sig_num = shared.transport.time_sig_numerator.unwrap_or(4) as f64;
+                let bars = (beats / time_sig_num).floor() as i32 + 1;
+                let beat_in_bar = (beats % time_sig_num) + 1.0;
+                ui.label(egui::RichText::new(format!("Bar {} : Beat {:.2}", bars, beat_in_bar)).size(18.0).monospace());
+            }
+
+            if let Some(secs) = shared.transport.pos_seconds {
+                let mins = (secs / 60.0).floor() as i32;
+                let remaining_secs = secs % 60.0;
+                ui.label(egui::RichText::new(format!("{}:{:05.2}", mins, remaining_secs)).size(16.0).monospace());
+            }
+
+            ui.add_space(16.0);
+            ui.separator();
+            ui.add_space(8.0);
+
+            // Plugin/Host info section
+            ui.heading("Plugin");
+            ui.label(format!("{} v{}", Skipper::NAME, Skipper::VERSION));
+            ui.label(format!("Format: {}", shared.plugin_api));
+            ui.label(format!("Sample Rate: {:.0} Hz | Buffer: {} samples", shared.sample_rate, shared.buffer_size));
+
+            if let Some(ref host) = shared.host_info {
+                ui.add_space(8.0);
+                ui.heading("Host");
+                if !host.name.is_empty() {
+                    ui.label(format!("{} {}", host.name, host.version));
+                }
+            }
+        });
+}
+
 impl Plugin for Skipper {
     const NAME: &'static str = "Skipper";
     const VENDOR: &'static str = "Audio Forge RS";
@@ -246,18 +390,42 @@ impl Plugin for Skipper {
             |_, _| {},
             move |egui_ctx, _setter, _editor_state| {
                 egui::CentralPanel::default().show(egui_ctx, |ui| {
-                    let shared = state.read();
                     egui_ctx.request_repaint();
 
-                    let info_text = build_info_text(&shared);
+                    // Tab bar
+                    let current_tab = {
+                        let shared = state.read();
+                        shared.current_tab
+                    };
 
-                    egui::ScrollArea::vertical()
-                        .auto_shrink([false, false])
-                        .show(ui, |ui| {
-                            ui.add(egui::Label::new(
-                                egui::RichText::new(&info_text).monospace()
-                            ).selectable(true));
-                        });
+                    ui.horizontal(|ui| {
+                        if ui.selectable_label(current_tab == Tab::Live, "Live").clicked() {
+                            state.write().current_tab = Tab::Live;
+                        }
+                        if ui.selectable_label(current_tab == Tab::Info, "Info").clicked() {
+                            state.write().current_tab = Tab::Info;
+                        }
+                    });
+
+                    ui.separator();
+
+                    let shared = state.read();
+
+                    match shared.current_tab {
+                        Tab::Live => {
+                            render_live_tab(ui, &shared);
+                        }
+                        Tab::Info => {
+                            let info_text = build_info_text(&shared);
+                            egui::ScrollArea::vertical()
+                                .auto_shrink([false, false])
+                                .show(ui, |ui| {
+                                    ui.add(egui::Label::new(
+                                        egui::RichText::new(&info_text).monospace()
+                                    ).selectable(true));
+                                });
+                        }
+                    }
                 });
             },
         )
@@ -273,9 +441,36 @@ impl Plugin for Skipper {
         let host_info = context.host_info();
         let track_info = context.track_info();
 
-        nih_log!("Skipper initialize() id={} API={:?}", self.instance_id, api);
-        nih_log!("  host_info={:?}", host_info);
-        nih_log!("  track_info={:?}", track_info);
+        nih_log!("========================================");
+        nih_log!("Skipper v{} initialize() id={}", env!("CARGO_PKG_VERSION"), self.instance_id);
+        nih_log!("========================================");
+        nih_log!("API: {:?}", api);
+        nih_log!("Sample Rate: {} Hz", buffer_config.sample_rate);
+        nih_log!("Buffer Size: {} samples", buffer_config.max_buffer_size);
+
+        // Log host info
+        if let Some(ref host) = host_info {
+            nih_log!("Host: {} {} ({})", host.name, host.version, host.vendor);
+        } else {
+            nih_log!("Host: (no host info available)");
+        }
+
+        // Log track info in detail
+        if let Some(ref track) = track_info {
+            nih_log!("Track Name: {:?}", track.name);
+            if let Some((r, g, b)) = track.color {
+                nih_log!("Track Color: #{:02X}{:02X}{:02X} (RGB: {}, {}, {})", r, g, b, r, g, b);
+            } else {
+                nih_log!("Track Color: (not provided)");
+            }
+            nih_log!("Track Type: master={}, return={}, bus={}",
+                track.is_for_master, track.is_for_return_track, track.is_for_bus);
+            if let Some(ch) = track.audio_channel_count {
+                nih_log!("Track Channels: {}", ch);
+            }
+        } else {
+            nih_log!("Track: (no track info available)");
+        }
 
         {
             let mut state = self.state.write();
@@ -287,6 +482,7 @@ impl Plugin for Skipper {
         }
 
         nih_log!("Skipper initialized successfully (id={})", self.instance_id);
+        nih_log!("========================================");
         true
     }
 
