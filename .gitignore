@@ -223,4 +223,10 @@ temp/
 skipper-hub.sock
 skipper-hub.pid
 hub-state/
-docs/
+
+# =============================================================================
+# Documentation
+# =============================================================================
+
+# Large PDFs (manuals downloaded from vendors)
+docs/*.pdf

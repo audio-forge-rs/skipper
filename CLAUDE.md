@@ -616,16 +616,35 @@ jar tf target/gilligan-*.jar | grep "^com/" | head -20
 **Adding Controllers:**
 Settings (gear icon) → Controllers → Add button → Select vendor → Select model
 
+**Controller Script Console (where host.println() goes):**
+Commander: Ctrl+Enter (Cmd+Enter on Mac) → type "console" → select "Show Control Script Console"
+
 **Extension folder:**
 `~/Documents/Bitwig Studio/Extensions/`
 
 **Bitwig version info:**
 `~/Library/Application Support/Bitwig/Bitwig Studio/last-run-info.txt`
 
+## Additional Documentation
+
+- [docs/BITWIG-DEVELOPMENT.md](docs/BITWIG-DEVELOPMENT.md) - Technical reference for AI agents (debugging, file locations, API details)
+- [docs/UNDERSTANDING-BITWIG-DEVELOPMENT.md](docs/UNDERSTANDING-BITWIG-DEVELOPMENT.md) - Human-readable essay explaining plugins, extensions, and AI integration
+
 ## Resources
 
+### Community
+- [KVR Audio - Bitwig Forum](https://www.kvraudio.com/forum/viewforum.php?f=259) - Active community discussions
+- [KVR Audio - Controller Scripting](https://www.kvraudio.com/forum/viewforum.php?f=268) - Extension development help
+- [KVR Audio - DSP/Plugin Development](https://www.kvraudio.com/forum/viewforum.php?f=33) - CLAP/VST3/nih-plug discussions
+- [DrivenByMoss Thread](https://www.kvraudio.com/forum/viewtopic.php?t=502948) - 450+ pages of Bitwig extension knowledge
+
+### Projects
 - [WigAI](https://github.com/fabb/WigAI) - Inspiration for MCP server in Bitwig
 - [DrivenByMoss](https://github.com/git-moss/DrivenByMoss) - Premier Bitwig extension example
+- [nih-plug](https://github.com/robbert-vdh/nih-plug) - Rust audio plugin framework
+- [CLAP](https://github.com/free-audio/clap) - CLever Audio Plug-in specification
+
+### Specifications
 - [MCP Java SDK](https://github.com/modelcontextprotocol/java-sdk) - Official MCP SDK
 - [MCP Specification](https://modelcontextprotocol.io/specification/2025-11-25)
 - [Anthropic MCP Best Practices](https://www.anthropic.com/engineering/code-execution-with-mcp)
