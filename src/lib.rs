@@ -34,7 +34,7 @@ struct TransportState {
 /// Shared state between plugin and GUI
 struct SharedState {
     host_info: Option<HostInfo>,
-    track_info: Option<TrackInfo>,
+    track_info: Option<Arc<TrackInfo>>,
     transport: TransportState,
     sample_rate: f32,
     buffer_size: u32,
