@@ -90,7 +90,7 @@ impl Default for SkipperParams {
 }
 
 /// Build all display information as a single copyable text string
-fn build_info_text(shared: &SharedState) -> String {
+fn build_info_text(shared: &SharedState, track_info: &Option<Arc<TrackInfo>>) -> String {
     let mut lines = Vec::new();
 
     lines.push("==================================================".to_string());
@@ -99,7 +99,7 @@ fn build_info_text(shared: &SharedState) -> String {
     lines.push(String::new());
 
     // Track name (prominent)
-    if let Some(ref track) = shared.track_info {
+    if let Some(ref track) = track_info {
         let track_name = match &track.name {
             Some(name) if !name.is_empty() => name.clone(),
             _ => "(rename track in DAW)".to_string(),
@@ -223,7 +223,7 @@ fn build_info_text(shared: &SharedState) -> String {
 }
 
 /// Render the live dynamic tab with visual elements
-fn render_live_tab(ui: &mut egui::Ui, shared: &SharedState) {
+fn render_live_tab(ui: &mut egui::Ui, shared: &SharedState, track_info: &Option<Arc<TrackInfo>>) {
     egui::ScrollArea::vertical()
         .auto_shrink([false, false])
         .show(ui, |ui| {
@@ -231,7 +231,7 @@ fn render_live_tab(ui: &mut egui::Ui, shared: &SharedState) {
             ui.heading("Track");
             ui.add_space(4.0);
 
-            if let Some(ref track) = shared.track_info {
+            if let Some(ref track) = track_info {
                 // Track color bar
                 if let Some((r, g, b)) = track.color {
                     let color = egui::Color32::from_rgb(r, g, b);
@@ -388,9 +388,12 @@ impl Plugin for Skipper {
             self.params.editor_state.clone(),
             (),
             |_, _| {},
-            move |egui_ctx, _setter, _editor_state| {
+            move |egui_ctx, setter, _editor_state| {
                 egui::CentralPanel::default().show(egui_ctx, |ui| {
                     egui_ctx.request_repaint();
+
+                    // Get latest track info from context (updated by CLAP changed callback)
+                    let track_info = setter.raw_context.track_info();
 
                     // Tab bar
                     let current_tab = {
@@ -413,10 +416,10 @@ impl Plugin for Skipper {
 
                     match shared.current_tab {
                         Tab::Live => {
-                            render_live_tab(ui, &shared);
+                            render_live_tab(ui, &shared, &track_info);
                         }
                         Tab::Info => {
-                            let info_text = build_info_text(&shared);
+                            let info_text = build_info_text(&shared, &track_info);
                             egui::ScrollArea::vertical()
                                 .auto_shrink([false, false])
                                 .show(ui, |ui| {
