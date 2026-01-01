@@ -2,7 +2,7 @@
 name = "skipper"
 version = "0.5.0"
 edition = "2021"
-authors = ["Audio Forge RS"]
+authors = ["Brian Edwards <brian.mabry.edwards@gmail.com>"]
 license = "AGPL-3.0"
 description = "A CLAP plugin that displays host and track information"
 

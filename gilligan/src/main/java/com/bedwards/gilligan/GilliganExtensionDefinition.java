@@ -24,7 +24,7 @@ public class GilliganExtensionDefinition extends ControllerExtensionDefinition {
 
     @Override
     public String getAuthor() {
-        return "bedwards";
+        return "Audio Forge RS";
     }
 
     @Override
@@ -39,7 +39,7 @@ public class GilliganExtensionDefinition extends ControllerExtensionDefinition {
 
     @Override
     public String getHardwareVendor() {
-        return "bedwards";
+        return "Audio Forge RS";
     }
 
     @Override

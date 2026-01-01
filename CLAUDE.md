@@ -562,6 +562,14 @@ We maintain forks of key dependencies under the [audio-forge-rs](https://github.
 - [MCP Specification](https://modelcontextprotocol.io/specification/2025-11-25)
 - [Anthropic MCP Best Practices](https://www.anthropic.com/engineering/code-execution-with-mcp)
 
+## Author
+
+- **Name:** Brian Edwards
+- **Email:** brian.mabry.edwards@gmail.com
+- **Website:** https://audio-forge-rs.github.io/
+- **GitHub Org:** https://github.com/audio-forge-rs
+- **Vendor Name:** Audio Forge RS
+
 ## License
 
 - Skipper: AGPL-3.0
