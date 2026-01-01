@@ -237,8 +237,8 @@ fn build_info_text(shared: &SharedState) -> String {
 
 impl Plugin for Skipper {
     const NAME: &'static str = "Skipper";
-    const VENDOR: &'static str = "bedwards";
-    const URL: &'static str = "https://github.com/bedwards/skipper";
+    const VENDOR: &'static str = "Audio Forge RS";
+    const URL: &'static str = "https://audio-forge-rs.github.io/";
     const EMAIL: &'static str = "";
     const VERSION: &'static str = env!("CARGO_PKG_VERSION");
     const AUDIO_IO_LAYOUTS: &'static [AudioIOLayout] = &[
@@ -383,11 +383,15 @@ impl Plugin for Skipper {
 }
 
 impl ClapPlugin for Skipper {
-    const CLAP_ID: &'static str = "com.bedwards.skipper";
+    const CLAP_ID: &'static str = "rs.audio-forge.skipper";
     const CLAP_DESCRIPTION: Option<&'static str> = Some("Displays host and track information");
-    const CLAP_MANUAL_URL: Option<&'static str> = None;
-    const CLAP_SUPPORT_URL: Option<&'static str> = None;
-    const CLAP_FEATURES: &'static [ClapFeature] = &[ClapFeature::Utility];
+    const CLAP_MANUAL_URL: Option<&'static str> = Some("https://audio-forge-rs.github.io/");
+    const CLAP_SUPPORT_URL: Option<&'static str> = Some("https://github.com/audio-forge-rs/skipper");
+    const CLAP_FEATURES: &'static [ClapFeature] = &[
+        ClapFeature::NoteEffect,
+        ClapFeature::Utility,
+        ClapFeature::Analyzer,
+    ];
 }
 
 impl Vst3Plugin for Skipper {
