@@ -368,21 +368,43 @@ cat ~/skipper-nih.log
 
 ### Audio Thread Rules
 
-**CRITICAL:** The `process()` function runs on the audio thread. With `assert_process_allocs` enabled, ANY memory allocation crashes:
+**CRITICAL:** The `process()` function runs on the audio thread. With `assert_process_allocs` enabled, ANY memory allocation OR deallocation crashes:
 
 ❌ **FORBIDDEN in process():**
 - `String` creation or `format!()`
-- `Vec` allocation
+- `Vec` allocation or resizing
+- `Box::new()` or any heap allocation
 - File I/O (`std::fs::*`)
-- `std::env::var_os()`
-- `log_to_file()` or similar custom logging
-- Any heap allocation
+- `std::env::var_os()` - allocates internally
+- `nih_log!()` or any logging - allocates strings
+- Cloning types that contain `String` or `Vec`
+- **Dropping the last `Arc<T>` if T contains heap data** - deallocation!
+- Replacing `Option<Arc<T>>` values - drops old value, may deallocate
 
 ✅ **SAFE in process():**
 - Pre-allocated buffers
-- Stack variables
-- Atomic operations
-- Reading from Arc<RwLock<T>> (but not writing strings)
+- Stack variables (fixed-size arrays, primitives)
+- Atomic operations (`AtomicU32`, `AtomicBool`, etc.)
+- Cloning `Arc<T>` (just increments ref count, no allocation)
+- Reading through `Arc<RwLock<T>>`
+- Copying `Copy` types (integers, floats, tuples of Copy types)
+
+⚠️ **SUBTLE TRAPS:**
+```rust
+// BAD: Cloning TrackInfo allocates (contains String fields)
+let track_info = context.track_info(); // Returns Arc<TrackInfo>
+state.track_info = track_info.clone(); // Safe - Arc clone is cheap
+
+// BAD: But REPLACING an Option<Arc<T>> can DROP the old Arc!
+if new_info != state.track_info {
+    state.track_info = new_info; // If old Arc had refcount=1, this DEALLOCATES!
+}
+
+// GOOD: Update state only from main thread callbacks (initialize, changed)
+// Don't poll/update track_info in process() at all
+```
+
+**Rule of thumb:** In `process()`, only READ cached data. UPDATE cached data from main-thread callbacks (`initialize()`, CLAP `changed()` callbacks, etc.).
 
 ## Debugging Guidelines
 
