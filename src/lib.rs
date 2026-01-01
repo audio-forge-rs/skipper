@@ -392,29 +392,40 @@ impl Plugin for Skipper {
                 egui::CentralPanel::default().show(egui_ctx, |ui| {
                     egui_ctx.request_repaint();
 
+                    // Try to borrow state - skip frame if audio thread holds lock
+                    let Ok(shared) = state.try_borrow() else {
+                        ui.label("Loading...");
+                        return;
+                    };
+
                     // Get latest track info from context (updated by CLAP changed callback)
                     let track_info = setter.raw_context.track_info();
+                    let current_tab = shared.current_tab;
 
-                    // Tab bar
-                    let current_tab = {
-                        let shared = state.borrow();
-                        shared.current_tab
-                    };
+                    // Release borrow before tab clicks can mutate
+                    drop(shared);
 
                     ui.horizontal(|ui| {
                         if ui.selectable_label(current_tab == Tab::Live, "Live").clicked() {
-                            state.borrow_mut().current_tab = Tab::Live;
+                            if let Ok(mut s) = state.try_borrow_mut() {
+                                s.current_tab = Tab::Live;
+                            }
                         }
                         if ui.selectable_label(current_tab == Tab::Info, "Info").clicked() {
-                            state.borrow_mut().current_tab = Tab::Info;
+                            if let Ok(mut s) = state.try_borrow_mut() {
+                                s.current_tab = Tab::Info;
+                            }
                         }
                     });
 
                     ui.separator();
 
-                    let shared = state.borrow();
+                    // Re-borrow for rendering
+                    let Ok(shared) = state.try_borrow() else {
+                        return;
+                    };
 
-                    match shared.current_tab {
+                    match current_tab {
                         Tab::Live => {
                             render_live_tab(ui, &shared, &track_info);
                         }
