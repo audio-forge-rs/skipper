@@ -84,7 +84,7 @@ struct SkipperParams {
 impl Default for Skipper {
     fn default() -> Self {
         let instance_id = INSTANCE_COUNTER.fetch_add(1, Ordering::SeqCst);
-        log_to_file(instance_id, "Skipper instance created");
+        log_to_file(instance_id, &format!("Skipper v{} instance created", env!("CARGO_PKG_VERSION")));
         Self {
             params: Arc::new(SkipperParams::default()),
             state: Arc::new(RwLock::new(SharedState::default())),

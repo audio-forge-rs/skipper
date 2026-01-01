@@ -351,6 +351,26 @@ cat logs/skipper-plugin-0.log
 # [1767276268] track_info = Some(TrackInfo { name: Some("My Track"), ... })
 ```
 
+## Debugging Guidelines
+
+**NEVER delete code to debug.** Instead:
+1. Add more logging to pinpoint the exact crash location
+2. Handle more exceptions/edge cases
+3. Wrap suspicious code in error handling
+4. Stay laser focused on the specific issue
+
+**Logging approach:**
+- Add granular logs before and after each suspicious operation
+- Log function entry/exit points
+- Log variable values at key points
+- Use file logging (`~/skipper-logs/`) for plugin code
+- Use `nih_log!` for nih-plug internals (goes to stderr/Bitwig console)
+
+**Forking dependencies:**
+- If you need to fork, clone, or submodule anything, use the `https://github.com/audio-forge-rs` org
+- Use `gh` CLI for GitHub operations
+- Commit and push changes frequently
+
 ## Common Issues
 
 ### Skipper Plugin
