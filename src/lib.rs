@@ -72,6 +72,7 @@ pub struct Skipper {
     params: Arc<SkipperParams>,
     state: Arc<RwLock<SharedState>>,
     instance_id: u32,
+    process_logged: bool,
 }
 
 #[derive(Params)]
@@ -88,6 +89,7 @@ impl Default for Skipper {
             params: Arc::new(SkipperParams::default()),
             state: Arc::new(RwLock::new(SharedState::default())),
             instance_id,
+            process_logged: false,
         }
     }
 }
@@ -258,6 +260,7 @@ impl Plugin for Skipper {
     }
 
     fn editor(&mut self, _async_executor: AsyncExecutor<Self>) -> Option<Box<dyn Editor>> {
+        log_to_file(self.instance_id, "editor() called");
         let state = self.state.clone();
 
         create_egui_editor(
@@ -317,6 +320,11 @@ impl Plugin for Skipper {
         _aux: &mut AuxiliaryBuffers,
         context: &mut impl ProcessContext<Self>,
     ) -> ProcessStatus {
+        if !self.process_logged {
+            log_to_file(self.instance_id, "process() called (first time)");
+            self.process_logged = true;
+        }
+
         let track_info = context.track_info();
         let transport = context.transport();
 

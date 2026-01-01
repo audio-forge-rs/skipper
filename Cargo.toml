@@ -1,6 +1,6 @@
 [package]
 name = "skipper"
-version = "0.3.1"
+version = "0.3.3"
 edition = "2021"
 authors = ["bedwards"]
 license = "AGPL-3.0"
