@@ -1,0 +1,35 @@
+[package]
+name = "skipper"
+version = "0.3.0"
+edition = "2021"
+authors = ["bedwards"]
+license = "AGPL-3.0"
+description = "A CLAP plugin that displays host and track information"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[features]
+default = []
+
+[dependencies]
+nih_plug = { path = "nih-plug", features = ["assert_process_allocs"] }
+nih_plug_egui = { path = "nih-plug/nih_plug_egui" }
+parking_lot = "0.12"
+
+[dev-dependencies]
+clap-sys = { git = "https://github.com/micahrj/clap-sys.git", rev = "25d7f53fdb6363ad63fbd80049cb7a42a97ac156" }
+libloading = "0.8"
+
+[profile.release]
+lto = "thin"
+strip = "symbols"
+
+[profile.profiling]
+inherits = "release"
+debug = true
+strip = "none"
+
+[workspace]
+members = ["xtask"]
+exclude = ["nih-plug"]

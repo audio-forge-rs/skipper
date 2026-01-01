@@ -1,0 +1,3 @@
+[submodule "nih-plug"]
+	path = nih-plug
+	url = git@github.com:audio-forge-rs/nih-plug.git
