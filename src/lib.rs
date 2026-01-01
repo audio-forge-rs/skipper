@@ -497,9 +497,9 @@ impl Plugin for Skipper {
         // via CLAP changed() callback. Updating here would deallocate on audio thread.
         let transport = context.transport();
 
-        {
-            let mut state = self.state.borrow_mut();
-
+        // Use try_borrow_mut to avoid panic if GUI is reading state
+        // If contention, skip this update - GUI will get next one
+        if let Ok(mut state) = self.state.try_borrow_mut() {
             state.transport.tempo = transport.tempo;
             state.transport.time_sig_numerator = transport.time_sig_numerator;
             state.transport.time_sig_denominator = transport.time_sig_denominator;
