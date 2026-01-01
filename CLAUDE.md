@@ -318,11 +318,12 @@ public class MyTool {
     <version>11.0.20</version>
 </dependency>
 
-<!-- Bitwig Controller API -->
+<!-- Bitwig Controller API - PROVIDED by Bitwig runtime -->
 <dependency>
     <groupId>com.bitwig</groupId>
     <artifactId>extension-api</artifactId>
     <version>19</version>
+    <scope>provided</scope>
 </dependency>
 ```
 
@@ -540,19 +541,77 @@ We maintain forks of key dependencies under the [audio-forge-rs](https://github.
 
 ### Gilligan Extension
 
-**"Extension not loading"**
-- Check Java version (21+ required)
-- Verify .bwextension in correct folder
-- Check Bitwig console for errors (View > Toggle Console)
+**"Extension not loading" / "No extensions found"**
+1. Check Bitwig log file for errors:
+   ```bash
+   cat ~/Library/Logs/Bitwig/BitwigStudio.log | grep -i "gilligan\|extension\|error"
+   ```
+2. Common causes:
+   - Bitwig API bundled in JAR (must use `<scope>provided</scope>`)
+   - Java version mismatch (21+ required)
+   - Wrong extension folder
+
+**"Extension not in Add Controller menu"**
+- Go to: Settings → Controllers → Add → look for vendor name
+- Check log: `~/Library/Logs/Bitwig/BitwigStudio.log`
+- Look for: `[extension-registry error] Error scanning extension file`
+
+**pom.xml Requirements:**
+```xml
+<!-- CRITICAL: Bitwig API must be 'provided' - NOT bundled in JAR -->
+<dependency>
+    <groupId>com.bitwig</groupId>
+    <artifactId>extension-api</artifactId>
+    <version>19</version>
+    <scope>provided</scope>  <!-- REQUIRED! -->
+</dependency>
+```
+
+**Verify JAR contents (should NOT contain com/bitwig/):**
+```bash
+jar tf target/gilligan-*.jar | grep "^com/" | head -20
+# Should only show: com/bedwards/gilligan/...
+# Should NOT show: com/bitwig/...
+```
 
 **"MCP server not responding"**
 - Check port 61170 is not in use
-- Verify Gilligan is enabled in Bitwig Settings > Extensions
+- Verify Gilligan is enabled in Bitwig Settings > Controllers
 - Check firewall settings
 
 **"Values not updating"**
 - Call `markInterested()` on values you want to observe
 - Bitwig only sends updates for interested values
+
+### Bitwig Log Files
+
+```bash
+# Main Bitwig log (extension loading, errors)
+~/Library/Logs/Bitwig/BitwigStudio.log
+
+# Previous session log
+~/Library/Logs/Bitwig/BitwigStudio-previous-run.log
+
+# Plugin-specific logs
+~/Library/Logs/Bitwig/logs/skipper-plugin-0.log
+
+# Engine log
+~/Library/Logs/Bitwig/engine.log
+
+# Crash reports
+~/Library/Logs/DiagnosticReports/BitwigPluginHost-*.ips
+```
+
+### Bitwig UI Navigation
+
+**Adding Controllers:**
+Settings (gear icon) → Controllers → Add button → Select vendor → Select model
+
+**Extension folder:**
+`~/Documents/Bitwig Studio/Extensions/`
+
+**Bitwig version info:**
+`~/Library/Application Support/Bitwig/Bitwig Studio/last-run-info.txt`
 
 ## Resources
 

@@ -223,3 +223,4 @@ temp/
 skipper-hub.sock
 skipper-hub.pid
 hub-state/
+docs/

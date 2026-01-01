@@ -47,11 +47,12 @@
     </dependencyManagement>
 
     <dependencies>
-        <!-- Bitwig Extension API -->
+        <!-- Bitwig Extension API - provided by Bitwig runtime -->
         <dependency>
             <groupId>com.bitwig</groupId>
             <artifactId>extension-api</artifactId>
             <version>${bitwig.api.version}</version>
+            <scope>provided</scope>
         </dependency>
 
         <!-- MCP SDK - Model Context Protocol for AI integration -->
