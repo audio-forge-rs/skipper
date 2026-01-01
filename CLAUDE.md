@@ -567,7 +567,16 @@ We maintain forks of key dependencies under the [audio-forge-rs](https://github.
 </dependency>
 ```
 
-**Verify JAR contents (should NOT contain com/bitwig/):**
+**REQUIRED: Java SPI Service File**
+Bitwig uses Java ServiceLoader to discover extensions. Create:
+`src/main/resources/META-INF/services/com.bitwig.extension.ExtensionDefinition`
+
+with content:
+```
+com.bedwards.gilligan.GilliganExtensionDefinition
+```
+
+**Verify JAR contents:**
 ```bash
 jar tf target/gilligan-*.jar | grep "^com/" | head -20
 # Should only show: com/bedwards/gilligan/...
