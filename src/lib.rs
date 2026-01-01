@@ -493,15 +493,12 @@ impl Plugin for Skipper {
         context: &mut impl ProcessContext<Self>,
     ) -> ProcessStatus {
         // NO LOGGING HERE - audio thread forbids allocation
-        let track_info = context.track_info();
+        // NOTE: Don't update track_info here - it's set in initialize() and updated
+        // via CLAP changed() callback. Updating here would deallocate on audio thread.
         let transport = context.transport();
 
         {
             let mut state = self.state.write();
-
-            if track_info != state.track_info {
-                state.track_info = track_info;
-            }
 
             state.transport.tempo = transport.tempo;
             state.transport.time_sig_numerator = transport.time_sig_numerator;
