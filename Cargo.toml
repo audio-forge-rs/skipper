@@ -1,6 +1,6 @@
 [package]
 name = "skipper"
-version = "0.3.8"
+version = "0.3.9"
 edition = "2021"
 authors = ["Audio Forge RS"]
 license = "AGPL-3.0"

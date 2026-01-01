@@ -84,6 +84,7 @@ struct SkipperParams {
 impl Default for Skipper {
     fn default() -> Self {
         let instance_id = INSTANCE_COUNTER.fetch_add(1, Ordering::SeqCst);
+        nih_plug::nih_log!("Skipper v{} instance created (id={})", env!("CARGO_PKG_VERSION"), instance_id);
         log_to_file(instance_id, &format!("Skipper v{} instance created", env!("CARGO_PKG_VERSION")));
         Self {
             params: Arc::new(SkipperParams::default()),
@@ -260,6 +261,7 @@ impl Plugin for Skipper {
     }
 
     fn editor(&mut self, _async_executor: AsyncExecutor<Self>) -> Option<Box<dyn Editor>> {
+        nih_plug::nih_log!("Skipper editor() called (id={})", self.instance_id);
         log_to_file(self.instance_id, "editor() called");
         let state = self.state.clone();
         let instance_id = self.instance_id;
