@@ -1,6 +1,6 @@
+use atomic_refcell::AtomicRefCell;
 use nih_plug::prelude::*;
 use nih_plug_egui::{create_egui_editor, egui, EguiState};
-use parking_lot::RwLock;
 use std::sync::atomic::{AtomicU32, Ordering};
 use std::sync::Arc;
 
@@ -59,7 +59,7 @@ impl Default for SharedState {
 /// The Skipper plugin - displays host and track information
 pub struct Skipper {
     params: Arc<SkipperParams>,
-    state: Arc<RwLock<SharedState>>,
+    state: Arc<AtomicRefCell<SharedState>>,
     instance_id: u32,
 }
 
@@ -75,7 +75,7 @@ impl Default for Skipper {
         nih_log!("Skipper v{} instance created (id={})", env!("CARGO_PKG_VERSION"), instance_id);
         Self {
             params: Arc::new(SkipperParams::default()),
-            state: Arc::new(RwLock::new(SharedState::default())),
+            state: Arc::new(AtomicRefCell::new(SharedState::default())),
             instance_id,
         }
     }
@@ -394,22 +394,22 @@ impl Plugin for Skipper {
 
                     // Tab bar
                     let current_tab = {
-                        let shared = state.read();
+                        let shared = state.borrow();
                         shared.current_tab
                     };
 
                     ui.horizontal(|ui| {
                         if ui.selectable_label(current_tab == Tab::Live, "Live").clicked() {
-                            state.write().current_tab = Tab::Live;
+                            state.borrow_mut().current_tab = Tab::Live;
                         }
                         if ui.selectable_label(current_tab == Tab::Info, "Info").clicked() {
-                            state.write().current_tab = Tab::Info;
+                            state.borrow_mut().current_tab = Tab::Info;
                         }
                     });
 
                     ui.separator();
 
-                    let shared = state.read();
+                    let shared = state.borrow();
 
                     match shared.current_tab {
                         Tab::Live => {
@@ -473,7 +473,7 @@ impl Plugin for Skipper {
         }
 
         {
-            let mut state = self.state.write();
+            let mut state = self.state.borrow_mut();
             state.sample_rate = buffer_config.sample_rate;
             state.buffer_size = buffer_config.max_buffer_size;
             state.plugin_api = api;
@@ -498,7 +498,7 @@ impl Plugin for Skipper {
         let transport = context.transport();
 
         {
-            let mut state = self.state.write();
+            let mut state = self.state.borrow_mut();
 
             state.transport.tempo = transport.tempo;
             state.transport.time_sig_numerator = transport.time_sig_numerator;

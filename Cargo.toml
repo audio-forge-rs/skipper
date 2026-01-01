@@ -15,7 +15,7 @@ default = []
 [dependencies]
 nih_plug = { path = "nih-plug", features = ["assert_process_allocs"] }
 nih_plug_egui = { path = "nih-plug/nih_plug_egui" }
-parking_lot = "0.12"
+atomic_refcell = "0.1"
 
 [dev-dependencies]
 clap-sys = { git = "https://github.com/micahrj/clap-sys.git", rev = "25d7f53fdb6363ad63fbd80049cb7a42a97ac156" }
