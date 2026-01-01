@@ -262,28 +262,47 @@ impl Plugin for Skipper {
     fn editor(&mut self, _async_executor: AsyncExecutor<Self>) -> Option<Box<dyn Editor>> {
         log_to_file(self.instance_id, "editor() called");
         let state = self.state.clone();
+        let instance_id = self.instance_id;
 
-        create_egui_editor(
+        log_to_file(instance_id, "editor() calling create_egui_editor");
+        let result = create_egui_editor(
             self.params.editor_state.clone(),
             (),
             |_, _| {},
             move |egui_ctx, _setter, _editor_state| {
+                log_to_file(instance_id, "egui closure called");
+
+                log_to_file(instance_id, "egui: before CentralPanel");
                 egui::CentralPanel::default().show(egui_ctx, |ui| {
+                    log_to_file(instance_id, "egui: inside CentralPanel");
+
+                    log_to_file(instance_id, "egui: before state.read()");
                     let shared = state.read();
+                    log_to_file(instance_id, "egui: after state.read()");
+
                     egui_ctx.request_repaint();
 
+                    log_to_file(instance_id, "egui: before build_info_text");
                     let info_text = build_info_text(&shared);
+                    log_to_file(instance_id, "egui: after build_info_text");
 
+                    log_to_file(instance_id, "egui: before ScrollArea");
                     egui::ScrollArea::vertical()
                         .auto_shrink([false, false])
                         .show(ui, |ui| {
+                            log_to_file(instance_id, "egui: inside ScrollArea");
                             ui.add(egui::Label::new(
                                 egui::RichText::new(&info_text).monospace()
                             ).selectable(true));
+                            log_to_file(instance_id, "egui: after Label");
                         });
+                    log_to_file(instance_id, "egui: after ScrollArea");
                 });
+                log_to_file(instance_id, "egui: after CentralPanel");
             },
-        )
+        );
+        log_to_file(instance_id, "editor() create_egui_editor returned");
+        result
     }
 
     fn initialize(
