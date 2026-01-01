@@ -352,6 +352,9 @@ Controller extensions run on the main thread and can ask Bitwig to perform actio
 
 The solution involves a hybrid architecture. A controller extension serves as the central coordinator, receiving commands from the AI through MCP. It communicates with special-purpose plugins placed on each track that needs synchronized changes. These plugins maintain staging buffers where they hold prepared musical content. When the extension signals a commit, each plugin watches the transport position in its audio processing callback and releases its staged content at precisely the right moment.
 
+![Skipper + Gilligan Architecture](architecture.png)
+*The Skipper + Gilligan architecture: Claude Code communicates via MCP to Gilligan (the controller extension hub), which coordinates multiple Skipper plugin instances across tracks. Each Skipper feeds into its downstream instrument.*
+
 ![The Coordination Dance](coordination-dance-marketing.png)
 *Robot musicians on a steampunk stage, each connected by glowing threads to a central conductor. Buffer tanks hold staged musical notes, waiting for the metronome to strike beat one. The moment before synchronized action.*
 
