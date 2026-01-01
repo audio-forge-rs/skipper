@@ -406,6 +406,49 @@ if new_info != state.track_info {
 
 **Rule of thumb:** In `process()`, only READ cached data. UPDATE cached data from main-thread callbacks (`initialize()`, CLAP `changed()` callbacks, etc.).
 
+### Shared State Between GUI and Audio Thread
+
+When sharing state between GUI and audio thread, use `AtomicRefCell` (not `parking_lot::RwLock` which allocates):
+
+```rust
+use atomic_refcell::AtomicRefCell;
+
+struct SharedState { /* ... */ }
+state: Arc<AtomicRefCell<SharedState>>
+```
+
+**CRITICAL:** Both sides must use `try_borrow`/`try_borrow_mut` to avoid panics:
+
+```rust
+// ❌ BAD: borrow() panics if other thread holds lock
+let shared = state.borrow();  // PANIC if audio thread has borrow_mut!
+
+// ✅ GOOD: try_borrow gracefully handles contention
+let Ok(shared) = state.try_borrow() else {
+    return;  // Skip this frame, try again next time
+};
+```
+
+**In process() (audio thread):**
+```rust
+// Skip update if GUI is reading - missing one frame is imperceptible
+if let Ok(mut state) = self.state.try_borrow_mut() {
+    state.transport.tempo = transport.tempo;
+    // ...
+}
+```
+
+**In GUI (main thread):**
+```rust
+// Skip frame if audio thread is writing
+let Ok(shared) = state.try_borrow() else {
+    ui.label("Loading...");
+    return;
+};
+```
+
+**Why not RwLock?** `parking_lot::RwLock` allocates thread-local data on first lock acquisition, crashing with `assert_process_allocs`.
+
 ## Debugging Guidelines
 
 **NEVER delete code to debug.** Instead:
