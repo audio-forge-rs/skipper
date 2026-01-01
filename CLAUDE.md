@@ -154,7 +154,9 @@ cargo xtask bundle skipper
 cargo xtask bundle skipper --release
 
 # Output: target/bundled/skipper.clap, target/bundled/skipper.vst3
-# NOTE: Do NOT install to ~/Library/Audio/Plug-Ins/CLAP/ - use target/bundled for testing
+
+# IMPORTANT: Bitwig loads plugins directly from target/bundled/
+# Do NOT install to ~/Library/Audio/Plug-Ins/CLAP/
 
 # Run tests
 cargo test test_plugin_receives_track_name -- --nocapture
@@ -327,34 +329,72 @@ For coordinating multiple Skipper plugin instances with Gilligan:
 
 ## Logging & Debugging
 
-### Skipper Plugin Logs
+### nih_log! Macros (REQUIRED)
 
-Plugin writes to `logs/skipper-plugin-<id>.log` relative to the working directory:
+Use `nih_plug::nih_log!()` for ALL plugin logging:
 
-- **When running tests**: Logs appear in `skipper/logs/`
-- **When running in Bitwig**: Logs appear in Bitwig's working directory (varies by OS)
-  - macOS: Usually `~/Library/Application Support/Bitwig/logs/` or check Bitwig's pwd
-  - Look for recent `skipper-plugin-*.log` files
+```rust
+nih_plug::nih_log!("Message here");
+nih_plug::nih_log!("With args: {} {:?}", value, struct);
+```
 
-To find where Bitwig writes logs, check the plugin initialization logs for the actual path.
+**NEVER use file I/O, String allocation, or format!() in `process()`** - the audio thread forbids memory allocation. The `assert_process_allocs` feature will crash the plugin.
+
+### Starting Bitwig with Logging
+
+To capture nih_log output, start Bitwig from terminal with `NIH_LOG` env var:
+
+```bash
+# Set log file and start Bitwig (macOS)
+export NIH_LOG=~/skipper-nih.log
+/Applications/Bitwig\ Studio.app/Contents/MacOS/BitwigStudio
+
+# Or one-liner
+NIH_LOG=~/skipper-nih.log /Applications/Bitwig\ Studio.app/Contents/MacOS/BitwigStudio
+```
 
 ### Reading Logs
 
 ```bash
-# View test logs
-cat logs/skipper-plugin-0.log
+# View nih_log output
+cat ~/skipper-nih.log
 
-# Example log output:
-# [1767276268] Initializing...
-# [1767276268] Plugin API = Clap
-# [1767276268] host_info = Some(HostInfo { name: "Bitwig Studio", ... })
-# [1767276268] track_info = Some(TrackInfo { name: Some("My Track"), ... })
+# Example output:
+# 09:04:15 [INFO] skipper: Skipper v0.3.9 instance created (id=0)
+# 09:04:15 [INFO] skipper: Skipper editor() called (id=0)
+# 09:04:15 [INFO] nih_plug::wrapper::clap::wrapper: >>> CLAP track-info changed: name=Some("Skipper")
+# 09:04:15 [INFO] nih_plug_egui::editor: EguiEditor::spawn() called
+# 09:04:15 [DEBUG] egui_glow::painter: opengl version: 4.1 ATI-7.1.6
 ```
+
+### NIH_LOG Environment Variable
+
+- `NIH_LOG=stderr` → output to stderr (default)
+- `NIH_LOG=/path/to/file.log` → output to file
+- `NIH_LOG=windbg` → Windows debugger (Windows only)
+
+### Audio Thread Rules
+
+**CRITICAL:** The `process()` function runs on the audio thread. With `assert_process_allocs` enabled, ANY memory allocation crashes:
+
+❌ **FORBIDDEN in process():**
+- `String` creation or `format!()`
+- `Vec` allocation
+- File I/O (`std::fs::*`)
+- `std::env::var_os()`
+- `log_to_file()` or similar custom logging
+- Any heap allocation
+
+✅ **SAFE in process():**
+- Pre-allocated buffers
+- Stack variables
+- Atomic operations
+- Reading from Arc<RwLock<T>> (but not writing strings)
 
 ## Debugging Guidelines
 
 **NEVER delete code to debug.** Instead:
-1. Add more logging to pinpoint the exact crash location
+1. Add more `nih_log!()` calls to pinpoint exact crash location
 2. Handle more exceptions/edge cases
 3. Wrap suspicious code in error handling
 4. Stay laser focused on the specific issue
@@ -363,8 +403,8 @@ cat logs/skipper-plugin-0.log
 - Add granular logs before and after each suspicious operation
 - Log function entry/exit points
 - Log variable values at key points
-- Use file logging (`~/skipper-logs/`) for plugin code
-- Use `nih_log!` for nih-plug internals (goes to stderr/Bitwig console)
+- Use `nih_log!()` everywhere (NOT custom file logging)
+- Start Bitwig from terminal to see logs
 
 **Forking dependencies:**
 - If you need to fork, clone, or submodule anything, use the `https://github.com/audio-forge-rs` org
