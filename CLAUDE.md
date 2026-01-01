@@ -141,22 +141,15 @@ skipper/
 ### Skipper (Rust CLAP/VST3 Plugin)
 
 ```bash
-# Debug build
-cargo build
-
-# Release build
-cargo build --release
-
-# Bundle as CLAP/VST3 (debug build)
+# Bundle as CLAP/VST3 (DEBUG - always use this)
 cargo xtask bundle skipper
-
-# Bundle as CLAP/VST3 (release build)
-cargo xtask bundle skipper --release
 
 # Output: target/bundled/skipper.clap, target/bundled/skipper.vst3
 
 # IMPORTANT: Bitwig loads plugins directly from target/bundled/
-# Do NOT install to ~/Library/Audio/Plug-Ins/CLAP/
+# - ALWAYS use debug builds (no --release flag)
+# - NEVER install to ~/Library/Audio/Plug-Ins/CLAP/
+# - NEVER use --release flag during development
 
 # Run tests
 cargo test test_plugin_receives_track_name -- --nocapture
