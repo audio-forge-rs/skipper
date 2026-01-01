@@ -12,6 +12,9 @@ When you open Bitwig, you see tracks running horizontally across your screen, a 
 
 Bitwig can be extended in two fundamentally different ways, and understanding the distinction is crucial. The first way is through audio plugins, which process or generate sound. The second way is through controller extensions, which let external hardware and software communicate with Bitwig to control its features. These two extension types serve different purposes, run in different contexts, and are built using different technologies.
 
+![Music Software Architecture](architecture-marketing.png)
+*The layers of music software integration: AI assistants in the cloud, the DAW interface, and hardware controllers connected by flowing data streams.*
+
 ### Audio Plugins: The Sound Processors
 
 Audio plugins are pieces of software that plug into the signal chain of your DAW. They come in several formats, with names like VST3, Audio Unit, and CLAP. When you add a reverb effect to a vocal track or load a virtual synthesizer to play melodies, you are using audio plugins.
@@ -20,13 +23,46 @@ The newest plugin format is called CLAP, which stands for CLever Audio Plug-in. 
 
 What makes CLAP particularly interesting for our purposes is its extensibility. The core CLAP specification defines how plugins handle audio and respond to note events, but it also allows for optional extensions that add new capabilities. One such extension is called track-info, which lets a plugin know the name and color of the track it sits on. This might seem like a small detail, but it opens the door to plugins that can adapt their behavior based on their context within a project.
 
+### The Audio Thread: A World of Constraints
+
 Plugins run on the audio thread, a special high-priority execution context that processes sound samples in real time. This environment is unforgiving. If your code takes too long to execute or tries to allocate memory, you will hear clicks, pops, or silence. The audio thread demands absolute discipline from developers, which is why plugin development has traditionally required expertise in low-level languages like C and C++.
+
+![The Audio Thread Challenge](audio-thread-marketing.png)
+*Two parallel worlds: the calm main thread where a conductor can pause mid-gesture, and the intense audio thread where a drummer plays at incredible speed. The barrier between them carries a stark warning: do not pause.*
+
+To understand the severity of this constraint, consider what happens when a DAW plays audio. At a typical sample rate of 48,000 samples per second, the audio thread must process each buffer of samples in a fraction of a millisecond. If the thread blocks waiting for memory allocation, file I/O, or a lock held by another thread, the audio output will glitch audibly. Users do not tolerate this. They will uninstall your plugin and leave a one-star review.
+
+The forbidden operations on the audio thread include:
+
+- **Memory allocation**: No `new`, `malloc`, `String::from()`, or `Vec::push()`. Every byte of memory must be allocated ahead of time.
+- **File I/O**: No reading or writing files. Logging to disk is not allowed.
+- **Locking**: No mutexes that might block. Lock-free data structures or try-lock patterns are required.
+- **System calls**: No network operations, no spawning threads, no printing to stdout.
+
+This is why audio programming is considered a specialized discipline. The rules are strict, and violating them produces immediate, audible consequences.
 
 ### Controller Extensions: The Communicators
 
 Controller extensions occupy a different space entirely. They do not process audio. Instead, they act as bridges between Bitwig and the outside world. When you connect a hardware controller like an Ableton Push or a Novation Launchpad, a controller extension translates the button presses and knob turns into actions within Bitwig. It also sends information back to the controller, lighting up buttons and updating displays.
 
 Controller extensions are written in Java, a language chosen for its stability and the wealth of libraries available for tasks like networking and data processing. Unlike plugins, extensions run on the main thread of the application, meaning they can safely interact with the user interface and perform operations that would be forbidden on the audio thread.
+
+The Bitwig Controller API provides access to nearly everything in the DAW: transport controls for play and stop, track banks for accessing mixer parameters, device chains for navigating through effects and instruments, and much more. The API follows an observer pattern. When you want to know when something changes, you register a callback. When you want to make changes, you call methods on API objects.
+
+A critical detail that trips up many newcomers: you must call `markInterested()` on any value you want to observe. Bitwig optimizes by not computing or sending updates for values that no one is watching. If you forget this call, your callbacks will never fire and you will spend hours wondering why.
+
+```java
+// This won't work - callbacks never fire
+track.name().addValueObserver(name -> {
+    host.println("Track name: " + name);
+});
+
+// This works - tell Bitwig you care about this value
+track.name().markInterested();
+track.name().addValueObserver(name -> {
+    host.println("Track name: " + name);
+});
+```
 
 The most prominent example of a controller extension is DrivenByMoss, created by Jürgen Moßgraber. This single extension supports dozens of hardware controllers from various manufacturers, implementing features that often exceed what the manufacturers themselves provide. Its development thread on the KVR Audio forum spans hundreds of pages and serves as an informal gathering place for the Bitwig controller scripting community.
 
@@ -36,29 +72,277 @@ While C and C++ have long dominated plugin development, a newer approach has eme
 
 The nih-plug framework, created by Robbert van der Helm, allows developers to write CLAP and VST3 plugins in Rust. The name comes from a Dutch expression, and the framework has gained popularity for its ergonomic design and thoughtful handling of the complexities inherent in plugin development. It provides abstractions for parameters, user interfaces, and the various plugin format specifications, letting developers focus on their audio processing logic rather than boilerplate code.
 
-One challenge with nih-plug, and with plugin development in general, is debugging. When something goes wrong in a plugin, you cannot simply attach a debugger the way you might with a regular application. Bitwig runs plugins in sandboxed processes for stability, which means the plugin lives in a separate address space from the main DAW. Developers have discovered workarounds, such as disabling the sandbox temporarily or loading a dummy plugin first to establish the host process before attaching their debugger.
+### The Plugin Trait
 
-For logging and diagnostic output, nih-plug provides a macro called nih_log that writes messages to a file or standard error stream. You can control where this output goes by setting an environment variable called NIH_LOG before launching Bitwig. If you point it at a file path, your log messages will accumulate there, giving you visibility into what your plugin is doing without interrupting the audio thread.
+At the heart of nih-plug is the `Plugin` trait. Your plugin implements this trait, providing methods that the framework calls at appropriate times:
+
+```rust
+impl Plugin for MyPlugin {
+    fn params(&self) -> Arc<dyn Params> {
+        self.params.clone()
+    }
+
+    fn process(
+        &mut self,
+        buffer: &mut Buffer,
+        _aux: &mut AuxiliaryBuffers,
+        context: &mut impl ProcessContext<Self>,
+    ) -> ProcessStatus {
+        // This runs on the audio thread
+        // Every sample passes through here
+        for channel_samples in buffer.iter_samples() {
+            for sample in channel_samples {
+                *sample *= self.params.gain.smoothed.next();
+            }
+        }
+        ProcessStatus::Normal
+    }
+}
+```
+
+The `process` method is where audio happens. It receives a buffer of samples, transforms them, and returns. This method runs tens of thousands of times per second. Everything you learned about audio thread constraints applies here. No allocations. No I/O. No blocking.
+
+### Thread Safety with Arc and AtomicRefCell
+
+Sharing data between the audio thread and the GUI thread requires careful coordination. Rust's ownership system helps here, but you still need appropriate concurrency primitives.
+
+The `Arc<AtomicRefCell<T>>` pattern is commonly used. `Arc` provides thread-safe reference counting for shared ownership. `AtomicRefCell` provides interior mutability with runtime borrow checking that panics rather than blocking:
+
+```rust
+// GUI thread can update this
+let track_info = Arc::new(AtomicRefCell::new(TrackInfo::default()));
+
+// Audio thread uses try_borrow() to avoid blocking
+if let Ok(info) = track_info.try_borrow() {
+    // Use the data
+}
+```
+
+The key is `try_borrow()` rather than `borrow()`. If the data is currently borrowed mutably by the GUI thread, `try_borrow()` returns an error rather than waiting. The audio thread can then proceed without the data rather than blocking.
+
+### Debugging Without a Debugger
+
+One challenge with nih-plug, and with plugin development in general, is debugging. When something goes wrong in a plugin, you cannot simply attach a debugger the way you might with a regular application. Bitwig runs plugins in sandboxed processes for stability, which means the plugin lives in a separate address space from the main DAW.
+
+For logging and diagnostic output, nih-plug provides a macro called `nih_log!` that writes messages to a file or standard error stream. You can control where this output goes by setting an environment variable called `NIH_LOG` before launching Bitwig:
+
+```bash
+# Log to a file
+export NIH_LOG=/tmp/my-plugin.log
+
+# Log to stderr (appears in terminal if Bitwig launched from terminal)
+export NIH_LOG=stderr
+
+# Launch Bitwig to pick up the variable
+/Applications/Bitwig\ Studio.app/Contents/MacOS/BitwigStudio
+```
+
+**Critical warning**: Do not call `nih_log!()` from the audio thread in production. The macro allocates memory and performs I/O, both forbidden operations. Use it only during development, and wrap calls in debug-only conditionals.
+
+### Forking Dependencies
+
+Real-world plugin development often requires modifying framework code. Our project maintains forks of several dependencies:
+
+**nih-plug fork** (`audio-forge-rs/nih-plug`): We added support for the CLAP track-info extension, allowing plugins to know which track they are on. This required exposing the CLAP host's track-info callback through nih-plug's abstraction layers.
+
+**baseview fork** (`audio-forge-rs/baseview`): We fixed a null pointer crash in macOS view initialization that occurred under specific conditions.
+
+**egui-baseview fork** (`audio-forge-rs/egui-baseview`): Updated to use our forked baseview.
+
+Maintaining forks is a responsibility. You must track upstream changes and periodically merge them. But when you need functionality that upstream does not provide, forking is the right choice.
 
 ## Building Extensions with Java
 
-Creating a controller extension begins with generating a project through Bitwig's dashboard. This produces a skeleton project with the necessary structure, including a class that extends ControllerExtensionDefinition and another that extends ControllerExtension. The definition class provides metadata about your extension, such as its name and the hardware vendor it supports. The extension class contains the actual logic that runs when your extension is active.
+Creating a controller extension begins with understanding Java's Service Provider Interface, or SPI. Bitwig uses SPI to discover extensions at startup. Your JAR file must include a special file at a specific path:
 
-The Bitwig Controller API provides access to nearly everything in the DAW: transport controls for play and stop, track information for reading and writing mixer parameters, device chains for navigating through effects and instruments, and much more. When you want to observe changes, you register callbacks that Bitwig invokes when something you care about changes. When you want to make changes, you call methods on the API objects.
+```
+META-INF/services/com.bitwig.extension.ExtensionDefinition
+```
 
-For debugging, Bitwig provides a Controller Script Console that displays output from your extension. You access it through the Commander, a quick-access search palette that appears when you press Control and Enter together on Windows and Linux, or Command and Enter on macOS. Simply type "console" and select the option to show the console. Any calls to host.println in your extension code will appear in this window, and you can type "restart" to reload your extension after making changes.
+This file contains a single line: the fully qualified name of your extension definition class:
 
-For more sophisticated debugging, you can configure Bitwig to accept debugger connections by setting the BITWIG_DEBUG_PORT environment variable before launching the application. On macOS, this means adding an export statement to your shell profile and then launching Bitwig from the terminal so it inherits the variable. Once configured, your Java IDE can connect to the running Bitwig process and stop at breakpoints, allowing you to inspect variables and step through your code. Be aware that Bitwig will freeze completely when it hits a breakpoint, which can be disorienting if you are not expecting it.
+```
+com.yourcompany.yourextension.YourExtensionDefinition
+```
+
+Without this file, Bitwig will not find your extension. The extension will not appear in the "Add Controller" menu. You will see no error messages. Your extension simply does not exist as far as Bitwig is concerned.
+
+Another critical requirement: the Bitwig API dependency must be marked as `provided` scope in your Maven configuration:
+
+```xml
+<dependency>
+    <groupId>com.bitwig</groupId>
+    <artifactId>extension-api</artifactId>
+    <version>19</version>
+    <scope>provided</scope>
+</dependency>
+```
+
+If you accidentally bundle the Bitwig API classes in your JAR, Bitwig will fail to load your extension. The API must come from Bitwig's runtime, not from your JAR.
+
+### The Extension Lifecycle
+
+Your extension has two main classes. The definition class provides metadata:
+
+```java
+public class GilliganExtensionDefinition extends ControllerExtensionDefinition {
+    @Override
+    public String getName() { return "Gilligan"; }
+
+    @Override
+    public String getAuthor() { return "Audio Forge RS"; }
+
+    @Override
+    public int getRequiredAPIVersion() { return 19; }
+
+    @Override
+    public GilliganExtension createInstance(ControllerHost host) {
+        return new GilliganExtension(this, host);
+    }
+}
+```
+
+The extension class contains your logic:
+
+```java
+public class GilliganExtension extends ControllerExtension {
+    @Override
+    public void init() {
+        // Called when Bitwig loads your extension
+        // Set up observers, create banks, start servers
+    }
+
+    @Override
+    public void exit() {
+        // Called when Bitwig unloads your extension
+        // Clean up resources, stop servers
+    }
+
+    @Override
+    public void flush() {
+        // Called periodically to send updates to hardware
+    }
+}
+```
+
+### The Controller Script Console
+
+For debugging, Bitwig provides a Controller Script Console that displays output from your extension. Finding it is surprisingly difficult for newcomers. The most reliable method:
+
+1. Press **Cmd+Enter** (Mac) or **Ctrl+Enter** (Windows/Linux) to open Commander
+2. Type **console**
+3. Select **Show Control Script Console**
+
+Any calls to `host.println()` in your extension code will appear in this window. You can also type **restart** in the console to reload your extension after making changes.
+
+For more sophisticated debugging, you can configure Bitwig to accept debugger connections by setting an environment variable:
+
+```bash
+export BITWIG_DEBUG_PORT=5005
+/Applications/Bitwig\ Studio.app/Contents/MacOS/BitwigStudio
+```
+
+Your Java IDE can then connect to `localhost:5005` and stop at breakpoints. Be aware that Bitwig will freeze completely when it hits a breakpoint, including audio output. This is normal but can be disorienting.
+
+### Network Access from Extensions
+
+Java extensions have full network access. You can run HTTP servers, WebSocket servers, OSC endpoints, or any other network service. This capability is what makes AI integration possible.
+
+DrivenByMoss uses OSC (Open Sound Control) to communicate with external applications. OSC is a UDP-based protocol popular in the music and multimedia world for its simplicity and low latency.
+
+Our project uses HTTP with Server-Sent Events for MCP communication. The choice depends on your requirements. OSC is simpler but unidirectional. HTTP is more complex but supports request-response patterns that MCP requires.
+
+**Thread safety warning**: Networking code runs on threads other than Bitwig's Control Surface thread. Calling Bitwig API methods from network handler threads may be unsafe. The common pattern is to queue commands and process them during the `flush()` callback, which runs on the correct thread.
 
 ## The MCP Protocol and AI Integration
 
 The Model Context Protocol, abbreviated as MCP, is a specification developed by Anthropic that allows AI assistants like Claude to interact with external tools and services. Think of it as a standardized way for an AI to extend its capabilities beyond pure text processing. Through MCP, an AI can query databases, read files, and control software.
 
-In the context of Bitwig development, MCP opens fascinating possibilities. Imagine telling an AI assistant to start playback, adjust the tempo, or add a new track with a specific synthesizer. The AI does not directly manipulate Bitwig. Instead, it sends commands through an MCP server that translates those commands into Bitwig Controller API calls.
+### How MCP Works
 
-This is exactly what projects like WigAI and our own Gilligan aim to accomplish. WigAI, created by Fabian Birklbauer, demonstrated that a Bitwig controller extension could host an MCP server, making DAW functionality accessible to AI tools. Gilligan builds on this concept while exploring additional capabilities like coordinating multiple plugin instances for beat-synchronized musical changes.
+MCP uses JSON-RPC over various transports. The most common transport for web-based tools is HTTP with Server-Sent Events (SSE). The protocol flow works like this:
 
-The technical implementation involves embedding an HTTP server within the controller extension. The MCP specification supports multiple transport mechanisms, including Server-Sent Events, which allows the server to push updates to clients, and a newer streamable HTTP approach. The extension registers tools that the AI can invoke, each with a description of what it does and what parameters it accepts. When the AI decides to use a tool, it sends a request to the MCP server, which executes the corresponding Bitwig API calls and returns the result.
+1. **Connection**: The client connects to an SSE endpoint (e.g., `/sse`)
+2. **Session**: The server assigns a session ID and sends it via SSE
+3. **Initialize**: The client POSTs an initialization request with protocol version
+4. **List Tools**: The client requests the list of available tools
+5. **Call Tools**: The client calls tools as needed, receiving responses via SSE
+
+Each tool has a name, description, and JSON schema for its parameters:
+
+```java
+McpSchema.Tool tool = McpSchema.Tool.builder()
+    .name("transport_play")
+    .description("Start playback")
+    .inputSchema(McpSchema.EMPTY_OBJECT_SCHEMA)
+    .build();
+```
+
+When the AI decides to use a tool, it sends a request. The server executes the action and returns a result. The AI incorporates this result into its reasoning.
+
+### Embedding an MCP Server
+
+Our Gilligan extension embeds a Jetty HTTP server that speaks MCP:
+
+```java
+public void start() throws Exception {
+    // Create SSE transport provider
+    HttpServletSseServerTransportProvider transportProvider =
+        new HttpServletSseServerTransportProvider(objectMapper, "/mcp", "/sse");
+
+    // Build MCP server
+    mcpServer = McpServer.sync(transportProvider)
+        .serverInfo("Gilligan", "0.1.0")
+        .capabilities(McpSchema.ServerCapabilities.builder()
+            .tools(true)
+            .resources(false, false)
+            .prompts(false)
+            .build())
+        .build();
+
+    // Register tools
+    mcpServer.addTool(TransportPlayTool.create(facade, host));
+    mcpServer.addTool(ListTracksTool.create(facade, host));
+    // ... more tools
+
+    // Configure and start Jetty
+    jettyServer = new Server(new QueuedThreadPool());
+    ServerConnector connector = new ServerConnector(jettyServer);
+    connector.setPort(61170);
+    // ... setup and start
+}
+```
+
+Stopping the server requires care. You must wait for Jetty to fully release the port before restarting:
+
+```java
+public void stop() {
+    if (jettyServer != null) {
+        jettyServer.stop();
+        jettyServer.join();  // Critical: wait for full shutdown
+        jettyServer = null;
+    }
+}
+```
+
+Without the `join()` call, rapid restart cycles will fail with "Address already in use" errors.
+
+### Claude Code Configuration
+
+To connect Claude Code to your MCP server, create a configuration file at `~/.claude/mcp.json`:
+
+```json
+{
+  "mcpServers": {
+    "gilligan": {
+      "transport": "sse",
+      "url": "http://localhost:61170/sse"
+    }
+  }
+}
+```
+
+After restarting Claude Code, the tools from your server will be available for the AI to use.
 
 ## The Challenge of Coordination
 
@@ -68,13 +352,26 @@ Controller extensions run on the main thread and can ask Bitwig to perform actio
 
 The solution involves a hybrid architecture. A controller extension serves as the central coordinator, receiving commands from the AI through MCP. It communicates with special-purpose plugins placed on each track that needs synchronized changes. These plugins maintain staging buffers where they hold prepared musical content. When the extension signals a commit, each plugin watches the transport position in its audio processing callback and releases its staged content at precisely the right moment.
 
+![The Coordination Dance](coordination-dance-marketing.png)
+*Robot musicians on a steampunk stage, each connected by glowing threads to a central conductor. Buffer tanks hold staged musical notes, waiting for the metronome to strike beat one. The moment before synchronized action.*
+
 This architecture exploits the strengths of each component type. The extension handles networking, command processing, and coordination logic that would be inappropriate for the audio thread. The plugins handle sample-accurate timing that would be impossible from the main thread. Together, they achieve capabilities that neither could accomplish alone.
+
+### Plugin Instance Identification
+
+A subtle challenge arises: how does the controller extension know which plugin is on which track?
+
+Neither CLAP nor VST3 provide unique instance identifiers. The CLAP track-info extension provides the track name, but multiple tracks can share the same name. There is no track ID, no plugin UUID.
+
+Our solution: each Skipper plugin generates its own UUID on instantiation. When Gilligan starts, Skipper instances register with it: "I am UUID X, on a track named Y with color Z." Gilligan uses the Bitwig Controller API to find matching tracks and builds a mapping from UUID to real track ID.
+
+This registration pattern is common when coordinating multiple plugin instances. The controller extension becomes a registry, and plugins check in with whatever identifying information they have.
 
 ## The KVR Audio Community
 
 Throughout this exploration, one resource appears repeatedly: the KVR Audio forum. This online community has served as a gathering place for audio software developers and enthusiasts since the early days of virtual instruments. The forum hosts dedicated sections for different DAWs, including Bitwig, as well as a DSP and Plugin Development section where deeply technical discussions unfold.
 
-The DrivenByMoss support thread alone spans over four hundred pages, documenting not just the extension itself but the evolution of the Bitwig Controller API over many years. When developers encounter obstacles, they often find that someone on KVR has already worked through the same problem. The forum represents institutional knowledge that no official documentation fully captures.
+The DrivenByMoss support thread alone spans hundreds of pages, documenting not just the extension itself but the evolution of the Bitwig Controller API over many years. When developers encounter obstacles, they often find that someone on KVR has already worked through the same problem. The forum represents institutional knowledge that no official documentation fully captures.
 
 For newcomers to Bitwig development, browsing these threads can be illuminating even if you do not understand every detail. You begin to see patterns in how experienced developers approach problems, what tools they reach for, and where the rough edges of the platform lie. This contextual knowledge proves invaluable when you encounter your own challenges.
 
@@ -116,15 +413,4 @@ The journey of learning never truly ends, but with these resources and the knowl
 
 ---
 
-## Image Prompts
-
-The following prompts are designed for AI image generation tools to create illustrations for this document:
-
-**Prompt 1: The Architecture Overview**
-A stylized technical diagram showing three layers of music software integration. At the top, a friendly robot assistant with headphones floats in a cloud, representing AI. In the middle, a sleek mixing console interface glows with colorful track lanes, representing the DAW. At the bottom, hardware controllers with illuminated pads and knobs connect via flowing data streams. The streams are visualized as musical notes and binary code intertwined. Isometric perspective, clean vector illustration style, cool blue and warm orange color palette, dark background with subtle grid lines suggesting a digital workspace.
-
-**Prompt 2: The Audio Thread Challenge**
-An abstract visualization of two parallel worlds existing in the same moment. On one side, a calm scene: a conductor with a baton frozen mid-gesture, representing the main thread where time can pause for debugging. On the other side, an intense scene: a musician playing drums at incredible speed with motion blur, hands moving too fast to see, representing the audio thread where every millisecond counts. A thin glowing barrier separates the two worlds with a warning sign showing a clock. Painterly digital art style with dramatic lighting, emphasizing the contrast between the serene and the urgent.
-
-**Prompt 3: The Coordination Dance**
-Multiple robot musicians on a stage, each playing a different instrument, viewed from above. Glowing threads connect them all to a central conductor figure who holds both a musical baton and a network switch. Each robot has a small buffer tank attached, partially filled with glowing musical notes, representing staged content waiting to be released. A large metronome in the background shows the moment approaching beat one. The scene captures the instant just before synchronized action. Whimsical steampunk aesthetic with digital elements, warm stage lighting, sense of anticipation and precision.
+*The illustrations in this document were created using AI image generation based on conceptual prompts describing the architecture, the audio thread challenge, and the coordination dance between plugins and extensions.*
