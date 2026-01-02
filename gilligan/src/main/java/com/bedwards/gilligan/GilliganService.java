@@ -262,8 +262,8 @@ public class GilliganService {
                     host.println("Gilligan: Staged program for track '" + track + "' (" +
                         noteCount + " notes)");
 
-                    // Auto-reload Skipper on this track to push the new program
-                    facade.reloadSkipperOnTrack(track);
+                    // Send Program Change to trigger Skipper to reload from file
+                    facade.sendProgramChangeToTrack(track);
                 }
 
                 if (tracks.length() > 0) tracks.append(", ");

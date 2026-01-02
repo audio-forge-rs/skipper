@@ -284,6 +284,28 @@ public class BitwigApiFacade {
     }
 
     /**
+     * Send MIDI Program Change to a track to trigger Skipper reload.
+     * @param trackName The name of the track (case-insensitive)
+     * @return true if track was found and Program Change sent, false otherwise
+     */
+    public boolean sendProgramChangeToTrack(String trackName) {
+        // Find the track by name
+        for (int i = 0; i < tracks.size(); i++) {
+            TrackInfo info = tracks.get(i);
+            if (info.exists && info.name.equalsIgnoreCase(trackName)) {
+                Track track = trackBank.getItemAt(i);
+                // Send Program Change (status 0xC0 = PC on channel 0, program 0)
+                // Skipper listens for any PC message as a reload trigger
+                host.println("Gilligan: Sending Program Change to track '" + trackName + "'");
+                track.sendMidi(0xC0, 0, 0);  // PC channel 0, program 0
+                return true;
+            }
+        }
+        host.println("Gilligan: Track '" + trackName + "' not found");
+        return false;
+    }
+
+    /**
      * Reload Skipper plugin on a specific track by toggling its enabled state.
      * This forces the plugin to re-initialize and fetch its program from Gilligan.
      * @param trackName The name of the track (case-insensitive)

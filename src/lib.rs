@@ -121,6 +121,15 @@ impl ActiveNotes {
         let bit = idx % 64;
         self.playing[word] &= !(1u64 << bit);
     }
+
+    fn clear_all(&mut self) {
+        self.playing = [0; 2];
+        self.end_beats = [0.0; 128];
+    }
+
+    fn any_playing(&self) -> bool {
+        self.playing[0] != 0 || self.playing[1] != 0
+    }
 }
 
 impl StagedProgram {
@@ -544,6 +553,7 @@ struct SharedState {
     program: StagedProgram,
     active_notes: ActiveNotes,
     last_program_beat: f64,  // Last beat position we processed (for note triggers)
+    last_program_version: u32,  // Track when program changes to clear active notes
 }
 
 impl Default for SharedState {
@@ -559,6 +569,7 @@ impl Default for SharedState {
             program: StagedProgram::default(),
             active_notes: ActiveNotes::default(),
             last_program_beat: -1.0,
+            last_program_version: 0,
         }
     }
 }
@@ -568,6 +579,8 @@ pub struct Skipper {
     params: Arc<SkipperParams>,
     state: Arc<AtomicRefCell<SharedState>>,
     instance_id: u32,
+    /// Reload signal - set by audio thread, cleared by background thread
+    reload_signal: Arc<std::sync::atomic::AtomicBool>,
 }
 
 #[derive(Params)]
@@ -584,12 +597,39 @@ impl Default for Skipper {
             params: Arc::new(SkipperParams::default()),
             state: Arc::new(AtomicRefCell::new(SharedState::default())),
             instance_id,
+            reload_signal: Arc::new(std::sync::atomic::AtomicBool::new(false)),
         }
     }
 }
 
 /// Gilligan REST API URL
 const GILLIGAN_URL: &str = "http://localhost:61170/api";
+
+
+/// Load program from staging file for a track
+fn load_program_from_file(track_name: &str) -> Option<serde_json::Value> {
+    let path = PathBuf::from(STAGING_DIR).join(format!("{}.json", track_name));
+    nih_log!("Loading program from file: {:?}", path);
+
+    match std::fs::read_to_string(&path) {
+        Ok(content) => {
+            match serde_json::from_str(&content) {
+                Ok(json) => {
+                    nih_log!("Loaded program from {:?}", path);
+                    Some(json)
+                }
+                Err(e) => {
+                    nih_log!("Failed to parse program file: {}", e);
+                    None
+                }
+            }
+        }
+        Err(e) => {
+            nih_log!("Failed to read program file: {}", e);
+            None
+        }
+    }
+}
 
 /// Register with Gilligan and get any staged program
 fn register_with_gilligan(uuid: &str, track_name: &str) -> Option<serde_json::Value> {
@@ -1254,6 +1294,35 @@ impl Plugin for Skipper {
             }
         });
 
+        // Spawn background thread to watch for reload signal (triggered by MIDI Program Change)
+        let state_clone2 = self.state.clone();
+        let reload_signal = self.reload_signal.clone();
+        std::thread::spawn(move || {
+            loop {
+                std::thread::sleep(std::time::Duration::from_millis(50));
+
+                // Check if reload was signaled
+                if reload_signal.swap(false, Ordering::SeqCst) {
+                    // Get track name from state
+                    let track_name = if let Ok(s) = state_clone2.try_borrow() {
+                        s.track_info.as_ref()
+                            .and_then(|t| t.name.as_ref())
+                            .cloned()
+                    } else {
+                        None
+                    };
+
+                    if let Some(name) = track_name {
+                        if let Some(program_json) = load_program_from_file(&name) {
+                            if let Ok(mut s) = state_clone2.try_borrow_mut() {
+                                s.program.load_from_json(&program_json);
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
         nih_log!("Skipper initialized successfully (id={})", self.instance_id);
         nih_log!("========================================");
         true
@@ -1268,30 +1337,65 @@ impl Plugin for Skipper {
         // NO LOGGING HERE - audio thread forbids allocation
         // NOTE: Don't update track_info here - it's set in initialize() and updated
         // via CLAP changed() callback. Updating here would deallocate on audio thread.
-        let transport = context.transport();
+
+        // Extract transport values we need (avoids borrow conflicts with context.send_event)
+        let (t_tempo, t_time_sig_num, t_time_sig_den, t_pos_samples, t_pos_beats, t_pos_seconds,
+             t_playing, t_recording, t_loop_range) = {
+            let transport = context.transport();
+            (transport.tempo, transport.time_sig_numerator, transport.time_sig_denominator,
+             transport.pos_samples(), transport.pos_beats(), transport.pos_seconds(),
+             transport.playing, transport.recording, transport.loop_range_beats())
+        };
+
+        // Check for Program Change message (standard MIDI way to change programs)
+        while let Some(event) = context.next_event() {
+            if let NoteEvent::MidiProgramChange { .. } = event {
+                // Signal background thread to reload from file
+                self.reload_signal.store(true, Ordering::SeqCst);
+            }
+        }
 
         // Use try_borrow_mut to avoid panic if GUI is reading state
         // If contention, skip this update - GUI will get next one
         if let Ok(mut state) = self.state.try_borrow_mut() {
             // Update transport state for GUI
-            state.transport.tempo = transport.tempo;
-            state.transport.time_sig_numerator = transport.time_sig_numerator;
-            state.transport.time_sig_denominator = transport.time_sig_denominator;
-            state.transport.pos_samples = transport.pos_samples();
-            state.transport.pos_beats = transport.pos_beats();
-            state.transport.pos_seconds = transport.pos_seconds();
-            state.transport.playing = transport.playing;
-            state.transport.recording = transport.recording;
-            state.transport.loop_active = transport.loop_range_beats().is_some();
-            if let Some((start, end)) = transport.loop_range_beats() {
+            state.transport.tempo = t_tempo;
+            state.transport.time_sig_numerator = t_time_sig_num;
+            state.transport.time_sig_denominator = t_time_sig_den;
+            state.transport.pos_samples = t_pos_samples;
+            state.transport.pos_beats = t_pos_beats;
+            state.transport.pos_seconds = t_pos_seconds;
+            state.transport.playing = t_playing;
+            state.transport.recording = t_recording;
+            state.transport.loop_active = t_loop_range.is_some();
+            if let Some((start, end)) = t_loop_range {
                 state.transport.loop_start_beats = Some(start);
                 state.transport.loop_end_beats = Some(end);
             }
 
             // === MIDI Note Emission ===
+            // Detect program change - send note-offs for all active notes
+            let program_changed = state.program.version != state.last_program_version;
+            if program_changed {
+                for pitch in 0u8..128 {
+                    if state.active_notes.is_playing(pitch) {
+                        context.send_event(NoteEvent::NoteOff {
+                            timing: 0,
+                            voice_id: None,
+                            channel: 0,
+                            note: pitch,
+                            velocity: 0.0,
+                        });
+                    }
+                }
+                state.active_notes.clear_all();
+                state.last_program_version = state.program.version;
+                state.last_program_beat = -1.0;  // Reset beat tracking
+            }
+
             // Only emit notes if playing and we have a loaded program
-            if transport.playing && state.program.loaded {
-                if let Some(pos_beats) = transport.pos_beats() {
+            if t_playing && state.program.loaded {
+                if let Some(pos_beats) = t_pos_beats {
                     let program_length = state.program.length_beats;
                     if program_length > 0.0 {
                         // Calculate position within program (looping)
@@ -1379,7 +1483,7 @@ impl Plugin for Skipper {
                         state.last_program_beat = program_beat;
                     }
                 }
-            } else if !transport.playing {
+            } else if !t_playing {
                 // Transport stopped - send note-off for all active notes
                 for pitch in 0u8..128 {
                     if state.active_notes.is_playing(pitch) {
