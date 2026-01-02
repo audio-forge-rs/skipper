@@ -71,13 +71,19 @@ public class BitwigApiFacade {
         transport.isPlaying().addValueObserver(playing -> isPlaying = playing);
         transport.isArrangerRecordEnabled().addValueObserver(recording -> isRecording = recording);
         transport.isArrangerLoopEnabled().addValueObserver(looping -> isLoopActive = looping);
-        transport.tempo().value().addValueObserver(t -> tempo = t);
+        transport.tempo().displayedValue().addValueObserver(s -> {
+            try {
+                tempo = Double.parseDouble(s.trim());
+            } catch (Exception e) {
+                // Keep previous value
+            }
+        });
         transport.getPosition().addValueObserver(pos -> positionBeats = pos);
         transport.timeSignature().numerator().addValueObserver(num -> timeSignatureNumerator = num);
         transport.timeSignature().denominator().addValueObserver(den -> timeSignatureDenominator = den);
 
         // Mark as interested
-        transport.tempo().markInterested();
+        transport.tempo().displayedValue().markInterested();
         transport.getPosition().markInterested();
         transport.isPlaying().markInterested();
         transport.isArrangerRecordEnabled().markInterested();

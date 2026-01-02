@@ -25,11 +25,15 @@ Commands:
     stage                           Stage programs (with --abc or --json)
     validate                        Validate ABC without staging
     workflow                        Full workflow: validate → stage
+    songs                           List available songs
+    song <name>                     Load song on all tracks (with retry)
 
 Examples:
     gilligan play
     gilligan tracks
     gilligan snapshot
+    gilligan songs                  # List all songs
+    gilligan song disco-fever       # Load disco on all tracks
     gilligan validate --key C --scale major 'c d e f | g a b c |'
     gilligan stage --track Piano --abc 'c d e f | g a b c |'
     gilligan workflow --track Bass --abc 'C, C, E, G, |'
@@ -289,7 +293,18 @@ def cmd_workflow(args):
     with open(staging_file, 'w') as f:
         json.dump(program, f, indent=2)
 
-    print(f"   Written: {staging_file}")
+    # Verify JSON is valid by reading it back
+    try:
+        with open(staging_file) as f:
+            verified = json.load(f)
+        if verified.get("name") != program["name"]:
+            print(f"   ERROR: JSON verification failed - name mismatch")
+            return 1
+        print(f"   Written: {staging_file}")
+        print(f"   Verified: {verified['name']} ({len(verified.get('notes', []))} notes, {verified.get('lengthBars')} bars)")
+    except json.JSONDecodeError as e:
+        print(f"   ERROR: Invalid JSON written: {e}")
+        return 1
 
     # Step 3: Also notify Gilligan (if running)
     print("\n3. Notifying Gilligan...")
@@ -308,6 +323,135 @@ def cmd_workflow(args):
     print(f"Skipper on track '{track}' will load from: {staging_file}")
     if validation.get("abc_output"):
         print(f"ABC: {validation['abc_output']}")
+
+    return 0
+
+
+SKIPPER_STAGING_DIR = Path("/tmp/skipper")
+TRACKS = ["Piano", "Bass", "Guitar", "Kick", "Snare", "Violin"]
+
+
+def ensure_playing():
+    """Ensure transport is playing."""
+    transport = api_call("transport")
+    if not transport.get("playing", False):
+        api_call("play")
+        print("   Started playback")
+        return True
+    return False
+
+
+def touch_file(path: Path):
+    """Touch file to trigger reload."""
+    import time
+    path.touch()
+    # Small delay to ensure file system picks up the change
+    time.sleep(0.05)
+
+
+def cmd_song(args):
+    """Load a complete song on all tracks with retry and playback."""
+    import time
+
+    songs_dir = Path(__file__).parent.parent / "songs"
+    song_path = songs_dir / args.song
+
+    if not song_path.is_dir():
+        print(f'{{"error": "Song not found: {args.song}"}}')
+        print(f"Available songs: {[d.name for d in songs_dir.iterdir() if d.is_dir()]}")
+        return 1
+
+    print(f"=== Loading Song: {args.song} ===")
+
+    # Set tempo if tempo.txt exists
+    tempo_file = song_path / "tempo.txt"
+    if tempo_file.exists():
+        tempo = float(tempo_file.read_text().strip())
+        result = api_call("tempo", {"bpm": tempo})
+        if "error" not in result:
+            print(f"   Tempo: {tempo} BPM")
+
+    # Ensure staging directory exists
+    SKIPPER_STAGING_DIR.mkdir(parents=True, exist_ok=True)
+
+    # Load all tracks
+    loaded = 0
+    max_bars = 0
+    for track in TRACKS:
+        src = song_path / f"{track}.json"
+        dst = SKIPPER_STAGING_DIR / f"{track}.json"
+
+        if src.exists():
+            # Copy to staging
+            import shutil
+            shutil.copy(src, dst)
+
+            # Read to get bar count
+            with open(dst) as f:
+                program = json.load(f)
+            bars = program.get("lengthBars", 8)
+            if bars > max_bars:
+                max_bars = bars
+
+            print(f"   {track}: {program.get('name', 'Unknown')} ({bars} bars)")
+            loaded += 1
+
+    if loaded == 0:
+        print("   ERROR: No tracks found in song")
+        return 1
+
+    print(f"\n   Loaded {loaded}/{len(TRACKS)} tracks, max {max_bars} bars")
+
+    # Retry logic - touch files to ensure reload
+    print("\n   Verifying load...")
+    time.sleep(0.2)  # Wait for initial load
+
+    retries = 3
+    for attempt in range(retries):
+        # Touch all files to trigger reload
+        for track in TRACKS:
+            dst = SKIPPER_STAGING_DIR / f"{track}.json"
+            if dst.exists():
+                touch_file(dst)
+
+        time.sleep(0.15)  # Wait for reload
+
+        if attempt < retries - 1:
+            print(f"   Retry {attempt + 1}...")
+
+    print("   OK")
+
+    # Ensure playing
+    print("\n   Checking transport...")
+    ensure_playing()
+    print("   Playing")
+
+    print(f"\n=== {args.song} loaded ===")
+    return 0
+
+
+def cmd_songs(args):
+    """List available songs."""
+    songs_dir = Path(__file__).parent.parent / "songs"
+
+    if not songs_dir.exists():
+        print('{"error": "Songs directory not found"}')
+        return 1
+
+    songs = sorted([d.name for d in songs_dir.iterdir() if d.is_dir()])
+
+    print(f"=== Available Songs ({len(songs)}) ===")
+    for song in songs:
+        song_path = songs_dir / song
+
+        # Count tracks
+        track_count = sum(1 for t in TRACKS if (song_path / f"{t}.json").exists())
+
+        # Get tempo
+        tempo_file = song_path / "tempo.txt"
+        tempo = tempo_file.read_text().strip() if tempo_file.exists() else "120"
+
+        print(f"  {song:25} {track_count}/6 tracks, {tempo} BPM")
 
     return 0
 
@@ -376,6 +520,13 @@ def main():
     workflow_p.add_argument("--commit-at", "-c", default="next_bar",
                             help="Commit timing")
 
+    # Song - load complete song
+    song_p = subparsers.add_parser("song", help="Load complete song on all tracks")
+    song_p.add_argument("song", help="Song name (directory in songs/)")
+
+    # Songs - list available songs
+    subparsers.add_parser("songs", help="List available songs")
+
     # Help
     subparsers.add_parser("help", help="Show help")
 
@@ -400,6 +551,8 @@ def main():
         "validate": cmd_validate,
         "stage": cmd_stage,
         "workflow": cmd_workflow,
+        "song": cmd_song,
+        "songs": cmd_songs,
     }
 
     handler = commands.get(args.command)
