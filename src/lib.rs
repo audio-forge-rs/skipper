@@ -1263,7 +1263,7 @@ impl Plugin for Skipper {
             state.track_info = track_info;
         }
 
-        // Spawn background thread to register with Gilligan once track info is available
+        // Spawn background thread to load program once track info is available
         let state_clone = self.state.clone();
         let instance_id = self.instance_id;
         std::thread::spawn(move || {
@@ -1281,8 +1281,15 @@ impl Plugin for Skipper {
                 };
 
                 if let Some(name) = track_name {
-                    // Always register and try to get fresh program
-                    // (Gilligan returns latest staged program for this track)
+                    // First try to load from staging file (fastest, no network)
+                    if let Some(program_json) = load_program_from_file(&name) {
+                        if let Ok(mut s) = state_clone.try_borrow_mut() {
+                            s.program.load_from_json(&program_json);
+                        }
+                        break;
+                    }
+
+                    // Fallback: register with Gilligan to get program
                     let uuid = format!("skipper-{}", instance_id);
                     if let Some(program_json) = register_with_gilligan(&uuid, &name) {
                         if let Ok(mut s) = state_clone.try_borrow_mut() {
