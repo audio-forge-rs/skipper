@@ -1,0 +1,12 @@
+% Walking Bass in C - 4 bars
+% Register: C1-C2 (MIDI 24-36) - Deep bass register
+% Progression: C - F - G - C
+
+% Bar 1: C major (root-5-3-5)
+C,, G,, E,, G,, |
+% Bar 2: F major (IV)
+F,, C, A,, C, |
+% Bar 3: G major (V)
+G,, D,, B,, D,, |
+% Bar 4: C resolution
+C,, G,, C,, E,, |

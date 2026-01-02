@@ -1,0 +1,11 @@
+% C Major Piano Arpeggio - 4 bars
+% Beautiful ascending/descending pattern with resolution
+
+% Bar 1: C E G C' (ascending arpeggio)
+c e g c' |
+% Bar 2: D' C' B A (descending melody)
+d' c' b a |
+% Bar 3: G (half) E (half)
+g2 e2 |
+% Bar 4: C (whole note resolution)
+c4 |

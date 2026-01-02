@@ -185,6 +185,163 @@ impl StagedProgram {
         nih_log!("========================================");
     }
 
+    /// Load a bass program (simple walking bass line in C)
+    fn load_bass_program(&mut self) {
+        self.set_name("Walking Bass C");
+        self.version = 1;
+
+        nih_log!("========================================");
+        nih_log!("Loading program: {} v{}", self.get_name(), self.version);
+        nih_log!("========================================");
+
+        // 4-bar walking bass line in C major
+        // Uses C1-C2 range (MIDI 24-36) - deep bass register
+        // Bar 1: C G E G (root-5-3-5 pattern)
+        // Bar 2: F C A C (IV chord)
+        // Bar 3: G D B D (V chord)
+        // Bar 4: C G C E (back to I, leading up)
+
+        let notes_data: [(u8, f64, f64, f32); 16] = [
+            // Bar 1: C major (beat 0-4)
+            (24, 0.0, 1.0, 0.9),   // C1
+            (31, 1.0, 1.0, 0.7),   // G1
+            (28, 2.0, 1.0, 0.7),   // E1
+            (31, 3.0, 1.0, 0.7),   // G1
+            // Bar 2: F major (beat 4-8)
+            (29, 4.0, 1.0, 0.9),   // F1
+            (36, 5.0, 1.0, 0.7),   // C2
+            (33, 6.0, 1.0, 0.7),   // A1
+            (36, 7.0, 1.0, 0.7),   // C2
+            // Bar 3: G major (beat 8-12)
+            (31, 8.0, 1.0, 0.9),   // G1
+            (26, 9.0, 1.0, 0.7),   // D1
+            (35, 10.0, 1.0, 0.7),  // B1
+            (26, 11.0, 1.0, 0.7),  // D1
+            // Bar 4: C resolution (beat 12-16)
+            (24, 12.0, 1.0, 0.9),  // C1
+            (31, 13.0, 1.0, 0.7),  // G1
+            (24, 14.0, 1.0, 0.7),  // C1
+            (28, 15.0, 1.0, 0.8),  // E1 (leading tone up)
+        ];
+
+        self.note_count = notes_data.len();
+        self.length_bars = 4.0;
+        self.length_beats = 16.0;
+
+        nih_log!("Program structure: {} bars ({} beats)", self.length_bars, self.length_beats);
+        nih_log!("Notes ({}):", self.note_count);
+
+        for (i, (pitch, start, length, vel)) in notes_data.iter().enumerate() {
+            self.notes[i] = ProgramNote {
+                pitch: *pitch,
+                start_beat: *start,
+                length_beats: *length,
+                velocity: *vel,
+                active: true,
+            };
+            let bar = (*start as i32 / 4) + 1;
+            let beat = (*start % 4.0) + 1.0;
+            nih_log!("  [{:2}] {} @ bar {} beat {:.1} (len: {} beats)",
+                i, Self::pitch_to_name(*pitch), bar, beat, length);
+        }
+
+        // Clear remaining slots
+        for i in self.note_count..MAX_NOTES {
+            self.notes[i].active = false;
+        }
+
+        self.loaded = true;
+        nih_log!("========================================");
+        nih_log!("Program ready: {} v{}", self.get_name(), self.version);
+        nih_log!("========================================");
+    }
+
+    /// Load a guitar power chord program (eighth note rhythm)
+    fn load_guitar_program(&mut self) {
+        self.set_name("Power Chords 8th");
+        self.version = 1;
+
+        nih_log!("========================================");
+        nih_log!("Loading program: {} v{}", self.get_name(), self.version);
+        nih_log!("========================================");
+
+        // 4-bar power chord progression (C5 - F5 - G5 - C5)
+        // Eighth notes (0.5 beats each), typical rock rhythm
+        // Power chord = root + fifth (no third)
+        // Pattern: hit-hit-rest-hit-hit-rest-hit-hit per bar
+
+        // Build notes programmatically for eighth note rhythm
+        let mut notes_data: Vec<(u8, u8, f64, f64, f32)> = Vec::new(); // (root, fifth, start, len, vel)
+
+        // Chord progression per bar
+        let chords: [(u8, u8); 4] = [
+            (48, 55), // C3 + G3 (C5 power chord)
+            (53, 60), // F3 + C4 (F5 power chord)
+            (55, 62), // G3 + D4 (G5 power chord)
+            (48, 55), // C3 + G3 (C5 power chord)
+        ];
+
+        // Eighth note pattern per bar: X X . X X . X X (8 eighth notes)
+        // hits on 1, 1.5, 2.5, 3, 4, 4.5
+        let pattern: [f64; 6] = [0.0, 0.5, 1.5, 2.0, 3.0, 3.5];
+
+        for (bar, (root, fifth)) in chords.iter().enumerate() {
+            let bar_start = (bar as f64) * 4.0;
+            for &offset in &pattern {
+                notes_data.push((*root, *fifth, bar_start + offset, 0.4, 0.85));
+            }
+        }
+
+        self.note_count = 0;
+        self.length_bars = 4.0;
+        self.length_beats = 16.0;
+
+        nih_log!("Program structure: {} bars ({} beats)", self.length_bars, self.length_beats);
+        nih_log!("Notes:");
+
+        for (root, fifth, start, length, vel) in notes_data.iter() {
+            // Add root note
+            if self.note_count < MAX_NOTES {
+                self.notes[self.note_count] = ProgramNote {
+                    pitch: *root,
+                    start_beat: *start,
+                    length_beats: *length,
+                    velocity: *vel,
+                    active: true,
+                };
+                let bar = (*start as i32 / 4) + 1;
+                let beat = (*start % 4.0) + 1.0;
+                nih_log!("  [{:2}] {} @ bar {} beat {:.1}",
+                    self.note_count, Self::pitch_to_name(*root), bar, beat);
+                self.note_count += 1;
+            }
+            // Add fifth
+            if self.note_count < MAX_NOTES {
+                self.notes[self.note_count] = ProgramNote {
+                    pitch: *fifth,
+                    start_beat: *start,
+                    length_beats: *length,
+                    velocity: *vel * 0.9,
+                    active: true,
+                };
+                nih_log!("  [{:2}] {} @ same time (fifth)",
+                    self.note_count, Self::pitch_to_name(*fifth));
+                self.note_count += 1;
+            }
+        }
+
+        // Clear remaining slots
+        for i in self.note_count..MAX_NOTES {
+            self.notes[i].active = false;
+        }
+
+        self.loaded = true;
+        nih_log!("Total notes: {}", self.note_count);
+        nih_log!("========================================");
+        nih_log!("Program ready: {} v{}", self.get_name(), self.version);
+        nih_log!("========================================");
+    }
+
     /// Convert MIDI pitch to note name for display
     fn pitch_to_name(pitch: u8) -> &'static str {
         const NAMES: [&str; 128] = [
@@ -833,11 +990,27 @@ impl Plugin for Skipper {
             state.buffer_size = buffer_config.max_buffer_size;
             state.plugin_api = api;
             state.host_info = host_info;
-            state.track_info = track_info;
 
-            // Load test program for development
-            nih_log!("Loading test program...");
-            state.program.load_test_program();
+            // Load program based on track name
+            let track_name = track_info.as_ref()
+                .and_then(|t| t.name.as_ref())
+                .map(|s| s.to_lowercase())
+                .unwrap_or_default();
+
+            nih_log!("Track name for program selection: '{}'", track_name);
+
+            if track_name.contains("bass") {
+                nih_log!("Loading BASS program...");
+                state.program.load_bass_program();
+            } else if track_name.contains("guitar") {
+                nih_log!("Loading GUITAR program...");
+                state.program.load_guitar_program();
+            } else {
+                nih_log!("Loading PIANO program (default)...");
+                state.program.load_test_program();
+            }
+
+            state.track_info = track_info;
         }
 
         nih_log!("Skipper initialized successfully (id={})", self.instance_id);
@@ -884,8 +1057,28 @@ impl Plugin for Skipper {
                         let program_beat = pos_beats % program_length;
                         let last_beat = state.last_program_beat;
 
-                        // Detect if we wrapped around (new loop iteration)
-                        let wrapped = program_beat < last_beat && last_beat > 0.0;
+                        // Detect wrap: position jumped backwards significantly
+                        // Use a threshold to handle floating point precision
+                        let wrapped = last_beat >= 0.0 && program_beat < last_beat - 1.0;
+
+                        // Also detect first frame after transport start (last_beat was -1)
+                        let first_frame = last_beat < 0.0;
+
+                        // On wrap or first frame: clear all active notes
+                        if wrapped || first_frame {
+                            for pitch in 0u8..128 {
+                                if state.active_notes.is_playing(pitch) {
+                                    context.send_event(NoteEvent::NoteOff {
+                                        timing: 0,
+                                        voice_id: None,
+                                        channel: 0,
+                                        note: pitch,
+                                        velocity: 0.0,
+                                    });
+                                    state.active_notes.clear_playing(pitch);
+                                }
+                            }
+                        }
 
                         // Check each note for note-on and note-off events
                         for i in 0..state.program.note_count {
@@ -899,13 +1092,12 @@ impl Plugin for Skipper {
                             let pitch = note.pitch;
 
                             // Note-on: trigger if we just crossed the start beat
-                            let should_trigger = if wrapped {
-                                // We wrapped - check if note is at start of program
-                                // or if we crossed it during the wrap
-                                note_start <= program_beat || note_start > last_beat
+                            let should_trigger = if wrapped || first_frame {
+                                // Wrap or start: trigger all notes from 0 to current position
+                                note_start <= program_beat + 0.01
                             } else {
                                 // Normal case: did we cross the start beat?
-                                note_start > last_beat && note_start <= program_beat
+                                note_start > last_beat && note_start <= program_beat + 0.01
                             };
 
                             if should_trigger && !state.active_notes.is_playing(pitch) {

@@ -3,7 +3,29 @@
 A multi-component system for displaying DAW/track information and enabling AI-assisted music production:
 
 1. **Skipper** - Rust CLAP/VST3 plugin (nih-plug) with egui GUI - one instance per track
-2. **Gilligan** - Java Bitwig Controller Extension with MCP Server - acts as central hub
+2. **Gilligan** - Java Bitwig Controller Extension with REST API - acts as central hub
+3. **gilligan.py** - Python CLI for transport, tracks, and staging programs
+
+## IMPORTANT: Use CLI Tools, Not MCP
+
+**DO NOT install the MCP server in Claude Code.** Use the Python CLI tools instead:
+
+```bash
+# Transport control
+python tools/gilligan.py play
+python tools/gilligan.py stop
+
+# List tracks
+python tools/gilligan.py tracks
+
+# Validate and stage ABC notation
+python tools/gilligan.py workflow --track Piano --abc 'c d e f | g a b c |'
+
+# Validate from file
+python tools/gilligan.py workflow --track Bass --file programs/template/current/bass.abc
+```
+
+The MCP code exists in the codebase for compatibility but is not the preferred interface.
 
 ## Quick Reference
 
@@ -15,20 +37,18 @@ See @docs/UNDERSTANDING-BITWIG-DEVELOPMENT.md for human-readable overview.
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
 │                         Claude Code (Opus 4.5)                      │
-│              "Load bass program on Track 2, drums on Track 3,       │
-│               commit on next beat 1..."                             │
+│              "Load bass program on Track 2, drums on Track 3..."    │
 └──────────────────────────────┬──────────────────────────────────────┘
                                │
-                               ▼ MCP over HTTP
+                               ▼ Python CLI (gilligan.py)
 ┌─────────────────────────────────────────────────────────────────────┐
 │                     Gilligan (Central Hub)                          │
-│                 http://localhost:61170/mcp                          │
+│                 REST API: http://localhost:61170/api/               │
 │                                                                     │
-│   MCP Tools:                      Plugin Registry:                  │
-│   • transport_*                   • Skipper instances register      │
-│   • list_tracks                   • Track ID ↔ Plugin UUID map      │
-│   • stage_program                 • Broadcast commit signals        │
-│   • commit_programs               • Real track IDs from Bitwig API  │
+│   Commands:                       Plugin Registry:                  │
+│   • play, stop, transport         • Skipper instances register      │
+│   • tracks, snapshot              • Track ID ↔ Plugin UUID map      │
+│   • stage (ABC → MIDI)            • Broadcast commit signals        │
 └──────────────────────────────┬──────────────────────────────────────┘
                                │
         ┌──────────────────────┼──────────────────────┐
@@ -38,7 +58,6 @@ See @docs/UNDERSTANDING-BITWIG-DEVELOPMENT.md for human-readable overview.
 │  Skipper #1   │      │  Skipper #2   │      │  Skipper #3   │
 │  (Track: Bass)│      │ (Track: Drums)│      │ (Track: Lead) │
 │               │      │               │      │               │
-│ • UUID: abc   │      │ • UUID: def   │      │ • UUID: ghi   │
 │ • Staged MIDI │      │ • Staged MIDI │      │ • Staged MIDI │
 │ • Beat-sync   │      │ • Beat-sync   │      │ • Beat-sync   │
 └───────┬───────┘      └───────┬───────┘      └───────┬───────┘
