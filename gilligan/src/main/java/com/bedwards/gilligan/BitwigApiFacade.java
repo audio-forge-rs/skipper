@@ -176,6 +176,15 @@ public class BitwigApiFacade {
         transport.isArrangerLoopEnabled().toggle();
     }
 
+    public void setTempo(double bpm) {
+        transport.tempo().setRaw(bpm);
+    }
+
+    public void setTimeSignature(int numerator, int denominator) {
+        transport.timeSignature().numerator().set(numerator);
+        transport.timeSignature().denominator().set(denominator);
+    }
+
     // State getters
     public Map<String, Object> getTransportState() {
         Map<String, Object> state = new HashMap<>();

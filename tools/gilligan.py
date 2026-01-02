@@ -235,6 +235,25 @@ def cmd_workflow(args):
 
     print(f"=== Workflow: {track} ===")
 
+    # Set tempo if specified
+    if hasattr(args, 'tempo') and args.tempo:
+        print(f"\n0a. Setting tempo to {args.tempo} BPM...")
+        result = api_call("tempo", {"bpm": args.tempo})
+        if "error" not in result:
+            print("   OK")
+
+    # Set time signature if specified
+    if hasattr(args, 'timesig') and args.timesig:
+        parts = args.timesig.split("/")
+        if len(parts) == 2:
+            print(f"\n0b. Setting time signature to {args.timesig}...")
+            result = api_call("timesig", {
+                "numerator": int(parts[0]),
+                "denominator": int(parts[1])
+            })
+            if "error" not in result:
+                print("   OK")
+
     # Step 1: Validate
     print("\n1. Validating ABC...")
     validation = validate_abc(abc, args.key, args.scale)
@@ -347,6 +366,8 @@ def main():
     workflow_p.add_argument("--name", "-n", help="Program name (default: track name)")
     workflow_p.add_argument("--key", "-k", help="Key for validation")
     workflow_p.add_argument("--scale", "-s", help="Scale for validation")
+    workflow_p.add_argument("--tempo", "-b", type=float, help="Set tempo in BPM")
+    workflow_p.add_argument("--timesig", help="Set time signature (e.g., 4/4)")
     workflow_p.add_argument("--commit-at", "-c", default="next_bar",
                             help="Commit timing")
 

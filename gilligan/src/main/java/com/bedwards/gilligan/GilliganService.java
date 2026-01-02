@@ -107,6 +107,50 @@ public class GilliganService {
         }
     }
 
+    public Result setTempo(Map<String, Object> args) {
+        try {
+            if (args == null || !args.containsKey("bpm")) {
+                return Result.err("bpm required");
+            }
+            double bpm = ((Number) args.get("bpm")).doubleValue();
+            if (bpm < 20 || bpm > 999) {
+                return Result.err("bpm must be between 20 and 999");
+            }
+            facade.setTempo(bpm);
+            host.println("Gilligan: Set tempo to " + bpm + " BPM");
+            return Result.ok(Map.of("tempo", bpm));
+        } catch (Exception e) {
+            host.errorln("Gilligan: setTempo error: " + e.getMessage());
+            return Result.err(e.getMessage());
+        }
+    }
+
+    public Result setTimeSignature(Map<String, Object> args) {
+        try {
+            if (args == null) {
+                return Result.err("numerator and denominator required");
+            }
+            int numerator = args.containsKey("numerator")
+                ? ((Number) args.get("numerator")).intValue() : 4;
+            int denominator = args.containsKey("denominator")
+                ? ((Number) args.get("denominator")).intValue() : 4;
+
+            if (numerator < 1 || numerator > 16) {
+                return Result.err("numerator must be between 1 and 16");
+            }
+            if (denominator != 2 && denominator != 4 && denominator != 8 && denominator != 16) {
+                return Result.err("denominator must be 2, 4, 8, or 16");
+            }
+
+            facade.setTimeSignature(numerator, denominator);
+            host.println("Gilligan: Set time signature to " + numerator + "/" + denominator);
+            return Result.ok(Map.of("timeSignature", numerator + "/" + denominator));
+        } catch (Exception e) {
+            host.errorln("Gilligan: setTimeSignature error: " + e.getMessage());
+            return Result.err(e.getMessage());
+        }
+    }
+
     // ========== Track Commands ==========
 
     public Result listTracks() {
@@ -372,6 +416,8 @@ public class GilliganService {
             case "stop", "transport_stop" -> stop();
             case "record", "transport_record" -> record();
             case "transport", "get_transport" -> getTransport();
+            case "tempo", "set_tempo" -> setTempo(args);
+            case "timesig", "set_time_signature" -> setTimeSignature(args);
             case "tracks", "list_tracks" -> listTracks();
             case "track", "get_selected_track" -> getSelectedTrack();
             case "create_track" -> createTrack((String) args.get("type"));

@@ -1241,19 +1241,12 @@ impl Plugin for Skipper {
                 };
 
                 if let Some(name) = track_name {
-                    // Check if already has program
-                    let has_program = if let Ok(s) = state_clone.try_borrow() {
-                        s.program.note_count > 0
-                    } else {
-                        false
-                    };
-
-                    if !has_program {
-                        let uuid = format!("skipper-{}", instance_id);
-                        if let Some(program_json) = register_with_gilligan(&uuid, &name) {
-                            if let Ok(mut s) = state_clone.try_borrow_mut() {
-                                s.program.load_from_json(&program_json);
-                            }
+                    // Always register and try to get fresh program
+                    // (Gilligan returns latest staged program for this track)
+                    let uuid = format!("skipper-{}", instance_id);
+                    if let Some(program_json) = register_with_gilligan(&uuid, &name) {
+                        if let Ok(mut s) = state_clone.try_borrow_mut() {
+                            s.program.load_from_json(&program_json);
                         }
                     }
                     break;
