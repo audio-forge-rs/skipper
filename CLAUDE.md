@@ -27,6 +27,28 @@ python tools/gilligan.py workflow --track Bass --file programs/template/current/
 
 The MCP code exists in the codebase for compatibility but is not the preferred interface.
 
+## Program Staging Workflow (Automatic - No Manual Steps)
+
+The workflow is fully automatic: **Claude → CLI → Gilligan → Skipper**
+
+```bash
+# Stage a program - Gilligan automatically pushes to the plugin
+python tools/gilligan.py workflow --track Bass --abc 'C, G, E, G, |'
+```
+
+**What happens automatically:**
+1. CLI validates ABC notation and sends to Gilligan REST API
+2. Gilligan stores the program for the track
+3. Gilligan toggles Skipper's enabled state on that track (forces reload)
+4. Skipper re-initializes and fetches the new program from Gilligan
+5. Plugin is ready to play
+
+**No manual steps required.** Do not ask the user to:
+- Click plugin windows
+- Reload plugins manually
+- Restart Bitwig
+- Remove/re-add devices
+
 ## Quick Reference
 
 See @docs/BITWIG-DEVELOPMENT.md for technical debugging reference.

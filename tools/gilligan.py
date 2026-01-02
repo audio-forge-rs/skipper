@@ -214,8 +214,11 @@ def cmd_stage(args):
     return 0 if "error" not in result else 1
 
 
+SKIPPER_STAGING_DIR = Path("/tmp/skipper")
+
+
 def cmd_workflow(args):
-    """Full workflow: validate ABC → stage to track."""
+    """Full workflow: validate ABC → write to staging file for Skipper."""
     if not args.abc and not args.file:
         print('{"error": "Provide --abc or file path"}')
         return 1
@@ -225,7 +228,10 @@ def cmd_workflow(args):
         with open(args.file) as f:
             abc = f.read()
 
-    track = args.track or "selected"
+    track = args.track
+    if not track:
+        print('{"error": "Track name required: --track Bass"}')
+        return 1
 
     print(f"=== Workflow: {track} ===")
 
@@ -247,22 +253,35 @@ def cmd_workflow(args):
     program = validation.get("program")
     print(f"   Length: {program.get('lengthBars')} bars, {len(program.get('notes', []))} notes")
 
-    # Step 2: Stage
-    print("\n2. Staging to Gilligan...")
+    # Step 2: Write to staging file for Skipper to read
+    print("\n2. Writing to staging file...")
+    SKIPPER_STAGING_DIR.mkdir(parents=True, exist_ok=True)
+    staging_file = SKIPPER_STAGING_DIR / f"{track}.json"
+
+    # Add metadata
+    program["name"] = args.name or f"{track} Program"
+    program["version"] = 1
+
+    with open(staging_file, 'w') as f:
+        json.dump(program, f, indent=2)
+
+    print(f"   Written: {staging_file}")
+
+    # Step 3: Also notify Gilligan (if running)
+    print("\n3. Notifying Gilligan...")
     result = api_call("stage", {
         "stages": [{"track": track, "program": program}],
         "commitAt": args.commit_at or "next_bar"
     })
 
     if "error" in result:
-        print(f"   FAILED: {result['error']}")
-        return 1
+        print(f"   Warning: Gilligan not responding (file staging still works)")
+    else:
+        print("   OK")
 
-    print("   OK")
-    print(f"   Commit: {result.get('commitAt', 'next_bar')}")
-
-    # Step 3: Summary
+    # Summary
     print("\n=== Done ===")
+    print(f"Skipper on track '{track}' will load from: {staging_file}")
     if validation.get("abc_output"):
         print(f"ABC: {validation['abc_output']}")
 
@@ -324,7 +343,8 @@ def main():
     workflow_p = subparsers.add_parser("workflow", help="Full validate → stage workflow")
     workflow_p.add_argument("file", nargs="?", help="ABC file path")
     workflow_p.add_argument("--abc", "-a", help="ABC notation string")
-    workflow_p.add_argument("--track", "-t", help="Track name")
+    workflow_p.add_argument("--track", "-t", required=True, help="Track name (required)")
+    workflow_p.add_argument("--name", "-n", help="Program name (default: track name)")
     workflow_p.add_argument("--key", "-k", help="Key for validation")
     workflow_p.add_argument("--scale", "-s", help="Scale for validation")
     workflow_p.add_argument("--commit-at", "-c", default="next_bar",

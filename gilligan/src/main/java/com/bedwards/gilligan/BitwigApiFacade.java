@@ -41,6 +41,7 @@ public class BitwigApiFacade {
 
     // Track bank info
     private final List<TrackInfo> tracks = new ArrayList<>();
+    private final List<DeviceBank> deviceBanks = new ArrayList<>();
 
     public BitwigApiFacade(ControllerHost host) {
         this.host = host;
@@ -138,6 +139,7 @@ public class BitwigApiFacade {
 
             // Create device bank for this track (8 devices)
             DeviceBank deviceBank = track.createDeviceBank(8);
+            deviceBanks.add(deviceBank);
             for (int j = 0; j < 8; j++) {
                 Device device = deviceBank.getDevice(j);
                 final int deviceIndex = j;
@@ -152,6 +154,7 @@ public class BitwigApiFacade {
                 device.name().markInterested();
                 device.exists().markInterested();
                 device.isPlugin().markInterested();
+                device.isEnabled().markInterested();
             }
         }
     }
@@ -269,6 +272,42 @@ public class BitwigApiFacade {
         // Navigate through devices to find matching name
         // For now, this is limited - would need device bank for full navigation
         host.println("Gilligan: selectDeviceByName not fully implemented yet");
+    }
+
+    /**
+     * Reload Skipper plugin on a specific track by toggling its enabled state.
+     * This forces the plugin to re-initialize and fetch its program from Gilligan.
+     * @param trackName The name of the track (case-insensitive)
+     * @return true if Skipper was found and reloaded, false otherwise
+     */
+    public boolean reloadSkipperOnTrack(String trackName) {
+        // Find the track by name
+        for (int i = 0; i < tracks.size(); i++) {
+            TrackInfo info = tracks.get(i);
+            if (info.exists && info.name.equalsIgnoreCase(trackName)) {
+                // Found the track, now find Skipper in its devices
+                DeviceBank deviceBank = deviceBanks.get(i);
+                for (int j = 0; j < info.devices.size(); j++) {
+                    DeviceInfo deviceInfo = info.devices.get(j);
+                    if (deviceInfo.exists && deviceInfo.name.equals("Skipper")) {
+                        Device device = deviceBank.getDevice(j);
+                        // Toggle enabled state to force reload
+                        host.println("Gilligan: Reloading Skipper on track '" + trackName + "'");
+                        device.isEnabled().set(false);
+                        // Schedule re-enable after a short delay
+                        host.scheduleTask(() -> {
+                            device.isEnabled().set(true);
+                            host.println("Gilligan: Skipper re-enabled on track '" + trackName + "'");
+                        }, 100); // 100ms delay
+                        return true;
+                    }
+                }
+                host.println("Gilligan: No Skipper device found on track '" + trackName + "'");
+                return false;
+            }
+        }
+        host.println("Gilligan: Track '" + trackName + "' not found");
+        return false;
     }
 
     /**

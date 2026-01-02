@@ -16,6 +16,9 @@ default = []
 nih_plug = { path = "nih-plug", features = ["assert_process_allocs"] }
 nih_plug_egui = { path = "nih-plug/nih_plug_egui" }
 atomic_refcell = "0.1"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+ureq = "2.9"
 
 [dev-dependencies]
 clap-sys = { git = "https://github.com/micahrj/clap-sys.git", rev = "25d7f53fdb6363ad63fbd80049cb7a42a97ac156" }

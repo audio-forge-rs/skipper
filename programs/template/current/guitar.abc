@@ -1,12 +1,12 @@
 % Power Chord Rhythm Guitar - 4 bars
-% 1/8 note pattern: X X . X X . X X per bar
+% All eighth notes (8 per bar)
 % Progression: C5 - F5 - G5 - C5 (power chords = root + fifth)
 
 % Bar 1: C5 (C3 + G3)
-[C,G,]/2 [C,G,]/2 z/2 [C,G,]/2 [C,G,]/2 z/2 [C,G,]/2 [C,G,]/2 |
+[C,G,]/2 [C,G,]/2 [C,G,]/2 [C,G,]/2 [C,G,]/2 [C,G,]/2 [C,G,]/2 [C,G,]/2 |
 % Bar 2: F5 (F3 + C4)
-[F,c]/2 [F,c]/2 z/2 [F,c]/2 [F,c]/2 z/2 [F,c]/2 [F,c]/2 |
+[F,c]/2 [F,c]/2 [F,c]/2 [F,c]/2 [F,c]/2 [F,c]/2 [F,c]/2 [F,c]/2 |
 % Bar 3: G5 (G3 + D4)
-[G,d]/2 [G,d]/2 z/2 [G,d]/2 [G,d]/2 z/2 [G,d]/2 [G,d]/2 |
+[G,d]/2 [G,d]/2 [G,d]/2 [G,d]/2 [G,d]/2 [G,d]/2 [G,d]/2 [G,d]/2 |
 % Bar 4: C5 (back to I)
-[C,G,]/2 [C,G,]/2 z/2 [C,G,]/2 [C,G,]/2 z/2 [C,G,]/2 [C,G,]/2 |
+[C,G,]/2 [C,G,]/2 [C,G,]/2 [C,G,]/2 [C,G,]/2 [C,G,]/2 [C,G,]/2 [C,G,]/2 |

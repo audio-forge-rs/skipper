@@ -1,8 +1,13 @@
 use atomic_refcell::AtomicRefCell;
 use nih_plug::prelude::*;
 use nih_plug_egui::{create_egui_editor, egui, EguiState};
-use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
+use std::path::PathBuf;
+use std::sync::atomic::{AtomicU32, AtomicU64, Ordering};
 use std::sync::Arc;
+use std::time::SystemTime;
+
+/// Staging directory where gilligan.py writes program files
+const STAGING_DIR: &str = "/tmp/skipper";
 
 /// Global counter for unique plugin instance IDs
 static INSTANCE_COUNTER: AtomicU32 = AtomicU32::new(0);
@@ -119,6 +124,74 @@ impl ActiveNotes {
 }
 
 impl StagedProgram {
+    /// Load program from JSON (from Gilligan)
+    fn load_from_json(&mut self, json: &serde_json::Value) -> bool {
+        nih_log!("Loading program from JSON...");
+
+        // Get program name and version
+        let name = json.get("name")
+            .and_then(|v| v.as_str())
+            .unwrap_or("Staged Program");
+        self.set_name(name);
+
+        self.version = json.get("version")
+            .and_then(|v| v.as_u64())
+            .unwrap_or(1) as u32;
+
+        // Get length
+        self.length_bars = json.get("lengthBars")
+            .and_then(|v| v.as_f64())
+            .unwrap_or(4.0);
+        self.length_beats = json.get("lengthBeats")
+            .and_then(|v| v.as_f64())
+            .unwrap_or(self.length_bars * 4.0);
+
+        // Parse notes
+        let notes = match json.get("notes") {
+            Some(serde_json::Value::Array(arr)) => arr,
+            _ => {
+                nih_log!("No notes array in program JSON");
+                self.loaded = false;
+                return false;
+            }
+        };
+
+        self.note_count = 0;
+        for note_json in notes.iter().take(MAX_NOTES) {
+            let pitch = note_json.get("pitch")
+                .and_then(|v| v.as_u64())
+                .unwrap_or(60) as u8;
+            let start_beat = note_json.get("startBeat")
+                .and_then(|v| v.as_f64())
+                .unwrap_or(0.0);
+            let length_beats = note_json.get("lengthBeats")
+                .and_then(|v| v.as_f64())
+                .unwrap_or(1.0);
+            let velocity = note_json.get("velocity")
+                .and_then(|v| v.as_f64())
+                .unwrap_or(0.8) as f32;
+
+            self.notes[self.note_count] = ProgramNote {
+                pitch,
+                start_beat,
+                length_beats,
+                velocity,
+                active: true,
+            };
+            self.note_count += 1;
+        }
+
+        // Clear remaining slots
+        for i in self.note_count..MAX_NOTES {
+            self.notes[i].active = false;
+        }
+
+        self.loaded = true;
+        nih_log!("Loaded program '{}' v{}: {} bars, {} notes",
+            self.get_name(), self.version, self.length_bars, self.note_count);
+        true
+    }
+
     /// Load a beautiful 4-bar test program (C major arpeggio pattern)
     fn load_test_program(&mut self) {
         // Set program name and version
@@ -266,9 +339,8 @@ impl StagedProgram {
         nih_log!("========================================");
 
         // 4-bar power chord progression (C5 - F5 - G5 - C5)
-        // Eighth notes (0.5 beats each), typical rock rhythm
+        // All eighth notes (8 per bar, 0.5 beats each)
         // Power chord = root + fifth (no third)
-        // Pattern: hit-hit-rest-hit-hit-rest-hit-hit per bar
 
         // Build notes programmatically for eighth note rhythm
         let mut notes_data: Vec<(u8, u8, f64, f64, f32)> = Vec::new(); // (root, fifth, start, len, vel)
@@ -281,9 +353,8 @@ impl StagedProgram {
             (48, 55), // C3 + G3 (C5 power chord)
         ];
 
-        // Eighth note pattern per bar: X X . X X . X X (8 eighth notes)
-        // hits on 1, 1.5, 2.5, 3, 4, 4.5
-        let pattern: [f64; 6] = [0.0, 0.5, 1.5, 2.0, 3.0, 3.5];
+        // All 8 eighth notes per bar
+        let pattern: [f64; 8] = [0.0, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5];
 
         for (bar, (root, fifth)) in chords.iter().enumerate() {
             let bar_start = (bar as f64) * 4.0;
@@ -329,6 +400,85 @@ impl StagedProgram {
                 self.note_count += 1;
             }
         }
+
+        // Clear remaining slots
+        for i in self.note_count..MAX_NOTES {
+            self.notes[i].active = false;
+        }
+
+        self.loaded = true;
+        nih_log!("Total notes: {}", self.note_count);
+        nih_log!("========================================");
+        nih_log!("Program ready: {} v{}", self.get_name(), self.version);
+        nih_log!("========================================");
+    }
+
+    /// Load a drums program (basic rock beat with C3 trigger)
+    fn load_drums_program(&mut self) {
+        self.set_name("Rock Beat C3");
+        self.version = 1;
+
+        nih_log!("========================================");
+        nih_log!("Loading program: {} v{}", self.get_name(), self.version);
+        nih_log!("========================================");
+
+        // 4-bar basic rock drum pattern
+        // All notes on C3 (MIDI 48) - drum machine maps this
+        // Kick on 1, 3 | Snare on 2, 4 (backbeat)
+
+        // C3 = MIDI 48
+        let c3: u8 = 48;
+
+        let mut idx = 0;
+
+        // 4 bars, each bar: kick(1) snare(2) kick(3) snare(4)
+        for bar in 0..4 {
+            let bar_start = (bar as f64) * 4.0;
+
+            // Beat 1: Kick
+            self.notes[idx] = ProgramNote {
+                pitch: c3,
+                start_beat: bar_start + 0.0,
+                length_beats: 0.25,
+                velocity: 0.9,
+                active: true,
+            };
+            idx += 1;
+
+            // Beat 2: Snare (backbeat)
+            self.notes[idx] = ProgramNote {
+                pitch: c3,
+                start_beat: bar_start + 1.0,
+                length_beats: 0.25,
+                velocity: 0.85,
+                active: true,
+            };
+            idx += 1;
+
+            // Beat 3: Kick
+            self.notes[idx] = ProgramNote {
+                pitch: c3,
+                start_beat: bar_start + 2.0,
+                length_beats: 0.25,
+                velocity: 0.9,
+                active: true,
+            };
+            idx += 1;
+
+            // Beat 4: Snare (backbeat)
+            self.notes[idx] = ProgramNote {
+                pitch: c3,
+                start_beat: bar_start + 3.0,
+                length_beats: 0.25,
+                velocity: 0.85,
+                active: true,
+            };
+            idx += 1;
+        }
+
+        self.note_count = idx;
+        self.length_bars = 4.0;
+        self.length_beats = 16.0;
 
         // Clear remaining slots
         for i in self.note_count..MAX_NOTES {
@@ -434,6 +584,55 @@ impl Default for Skipper {
             params: Arc::new(SkipperParams::default()),
             state: Arc::new(AtomicRefCell::new(SharedState::default())),
             instance_id,
+        }
+    }
+}
+
+/// Gilligan REST API URL
+const GILLIGAN_URL: &str = "http://localhost:61170/api";
+
+/// Register with Gilligan and get any staged program
+fn register_with_gilligan(uuid: &str, track_name: &str) -> Option<serde_json::Value> {
+    nih_log!("Registering with Gilligan: uuid={}, track={}", uuid, track_name);
+
+    let url = format!("{}/register", GILLIGAN_URL);
+    let body = serde_json::json!({
+        "uuid": uuid,
+        "track": track_name
+    });
+
+    match ureq::post(&url)
+        .set("Content-Type", "application/json")
+        .send_string(&body.to_string())
+    {
+        Ok(response) => {
+            match response.into_string() {
+                Ok(text) => {
+                    nih_log!("Gilligan response: {}", text);
+                    match serde_json::from_str::<serde_json::Value>(&text) {
+                        Ok(json) => {
+                            if let Some(program) = json.get("program") {
+                                if !program.is_null() {
+                                    return Some(program.clone());
+                                }
+                            }
+                            None
+                        }
+                        Err(e) => {
+                            nih_log!("Failed to parse Gilligan response: {}", e);
+                            None
+                        }
+                    }
+                }
+                Err(e) => {
+                    nih_log!("Failed to read Gilligan response: {}", e);
+                    None
+                }
+            }
+        }
+        Err(e) => {
+            nih_log!("Failed to register with Gilligan: {}", e);
+            None
         }
     }
 }
@@ -714,7 +913,7 @@ fn render_live_tab(ui: &mut egui::Ui, shared: &SharedState, track_info: &Option<
 }
 
 /// Render the Program tab showing staged/current program
-fn render_program_tab(ui: &mut egui::Ui, shared: &SharedState) {
+fn render_program_tab(ui: &mut egui::Ui, shared: &SharedState, track_info: &Option<Arc<nih_plug::prelude::TrackInfo>>) {
     egui::ScrollArea::vertical()
         .auto_shrink([false, false])
         .show(ui, |ui| {
@@ -837,9 +1036,14 @@ fn render_program_tab(ui: &mut egui::Ui, shared: &SharedState) {
                 ui.label(egui::RichText::new("No program loaded").size(16.0).color(egui::Color32::GRAY));
                 ui.add_space(16.0);
 
-                // Load test button placeholder
+                // Show help text with actual track name
+                let track_name = track_info.as_ref()
+                    .and_then(|i| i.name.as_ref())
+                    .map(|s| s.as_str())
+                    .unwrap_or("TrackName");
                 ui.label("Use Gilligan CLI to load a program:");
-                ui.label(egui::RichText::new("gilligan.py workflow --track Piano --abc 'c d e f'")
+                ui.label(egui::RichText::new(format!(
+                    "gilligan.py workflow --track {} --abc 'c d e f'", track_name))
                     .monospace()
                     .size(12.0));
             }
@@ -873,6 +1077,7 @@ impl Plugin for Skipper {
     fn editor(&mut self, _async_executor: AsyncExecutor<Self>) -> Option<Box<dyn Editor>> {
         nih_log!("Skipper editor() called (id={})", self.instance_id);
         let state = self.state.clone();
+        let instance_id = self.instance_id;
 
         create_egui_editor(
             self.params.editor_state.clone(),
@@ -882,14 +1087,39 @@ impl Plugin for Skipper {
                 egui::CentralPanel::default().show(egui_ctx, |ui| {
                     egui_ctx.request_repaint();
 
+                    // Get latest track info from context (updated by CLAP changed callback)
+                    let track_info = setter.raw_context.track_info();
+
+                    // Register with Gilligan when track info available and no program loaded
+                    // Keep trying until we get a program (allows staging after plugin load)
+                    let has_program = if let Ok(s) = state.try_borrow() {
+                        s.program.note_count > 0
+                    } else {
+                        true // Assume loaded if can't check
+                    };
+
+                    if !has_program {
+                        if let Some(ref info) = track_info {
+                            if let Some(ref track_name) = info.name {
+                                if !track_name.is_empty() {
+                                    let uuid = format!("skipper-{}", instance_id);
+                                    if let Some(program_json) = register_with_gilligan(&uuid, track_name) {
+                                        // Load the program from Gilligan
+                                        if let Ok(mut s) = state.try_borrow_mut() {
+                                            s.program.load_from_json(&program_json);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
                     // Try to borrow state - skip frame if audio thread holds lock
                     let Ok(shared) = state.try_borrow() else {
                         ui.label("Loading...");
                         return;
                     };
 
-                    // Get latest track info from context (updated by CLAP changed callback)
-                    let track_info = setter.raw_context.track_info();
                     let current_tab = shared.current_tab;
 
                     // Release borrow before tab clicks can mutate
@@ -925,7 +1155,7 @@ impl Plugin for Skipper {
                             render_live_tab(ui, &shared, &track_info);
                         }
                         Tab::Program => {
-                            render_program_tab(ui, &shared);
+                            render_program_tab(ui, &shared, &track_info);
                         }
                         Tab::Info => {
                             let info_text = build_info_text(&shared, &track_info);
@@ -990,28 +1220,46 @@ impl Plugin for Skipper {
             state.buffer_size = buffer_config.max_buffer_size;
             state.plugin_api = api;
             state.host_info = host_info;
-
-            // Load program based on track name
-            let track_name = track_info.as_ref()
-                .and_then(|t| t.name.as_ref())
-                .map(|s| s.to_lowercase())
-                .unwrap_or_default();
-
-            nih_log!("Track name for program selection: '{}'", track_name);
-
-            if track_name.contains("bass") {
-                nih_log!("Loading BASS program...");
-                state.program.load_bass_program();
-            } else if track_name.contains("guitar") {
-                nih_log!("Loading GUITAR program...");
-                state.program.load_guitar_program();
-            } else {
-                nih_log!("Loading PIANO program (default)...");
-                state.program.load_test_program();
-            }
-
             state.track_info = track_info;
         }
+
+        // Spawn background thread to register with Gilligan once track info is available
+        let state_clone = self.state.clone();
+        let instance_id = self.instance_id;
+        std::thread::spawn(move || {
+            // Wait for track info to be populated (up to 5 seconds)
+            for _ in 0..50 {
+                std::thread::sleep(std::time::Duration::from_millis(100));
+
+                let track_name = if let Ok(s) = state_clone.try_borrow() {
+                    s.track_info.as_ref()
+                        .and_then(|t| t.name.as_ref())
+                        .filter(|n| !n.is_empty())
+                        .cloned()
+                } else {
+                    None
+                };
+
+                if let Some(name) = track_name {
+                    // Check if already has program
+                    let has_program = if let Ok(s) = state_clone.try_borrow() {
+                        s.program.note_count > 0
+                    } else {
+                        false
+                    };
+
+                    if !has_program {
+                        let uuid = format!("skipper-{}", instance_id);
+                        if let Some(program_json) = register_with_gilligan(&uuid, &name) {
+                            if let Ok(mut s) = state_clone.try_borrow_mut() {
+                                s.program.load_from_json(&program_json);
+                            }
+                        }
+                    }
+                    break;
+                }
+            }
+        });
 
         nih_log!("Skipper initialized successfully (id={})", self.instance_id);
         nih_log!("========================================");
