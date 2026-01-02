@@ -1,0 +1,55 @@
+{
+  "lengthBars": 8.0,
+  "notes": [
+    {
+      "pitch": 36,
+      "startBeat": 0.0,
+      "lengthBeats": 4.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 36,
+      "startBeat": 4.0,
+      "lengthBeats": 4.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 36,
+      "startBeat": 8.0,
+      "lengthBeats": 4.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 36,
+      "startBeat": 12.0,
+      "lengthBeats": 4.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 36,
+      "startBeat": 16.0,
+      "lengthBeats": 4.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 36,
+      "startBeat": 20.0,
+      "lengthBeats": 4.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 36,
+      "startBeat": 24.0,
+      "lengthBeats": 4.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 36,
+      "startBeat": 28.0,
+      "lengthBeats": 4.0,
+      "velocity": 0.8
+    }
+  ],
+  "name": "Classical Timpani",
+  "version": 1
+}

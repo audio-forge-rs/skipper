@@ -1,0 +1,175 @@
+{
+  "lengthBars": 8.0,
+  "notes": [
+    {
+      "pitch": 36,
+      "startBeat": 0.0,
+      "lengthBeats": 1.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 31,
+      "startBeat": 1.0,
+      "lengthBeats": 1.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 36,
+      "startBeat": 2.0,
+      "lengthBeats": 1.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 31,
+      "startBeat": 3.0,
+      "lengthBeats": 1.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 33,
+      "startBeat": 4.0,
+      "lengthBeats": 1.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 28,
+      "startBeat": 5.0,
+      "lengthBeats": 1.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 33,
+      "startBeat": 6.0,
+      "lengthBeats": 1.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 28,
+      "startBeat": 7.0,
+      "lengthBeats": 1.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 29,
+      "startBeat": 8.0,
+      "lengthBeats": 1.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 36,
+      "startBeat": 9.0,
+      "lengthBeats": 1.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 29,
+      "startBeat": 10.0,
+      "lengthBeats": 1.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 36,
+      "startBeat": 11.0,
+      "lengthBeats": 1.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 31,
+      "startBeat": 12.0,
+      "lengthBeats": 1.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 38,
+      "startBeat": 13.0,
+      "lengthBeats": 1.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 31,
+      "startBeat": 14.0,
+      "lengthBeats": 1.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 38,
+      "startBeat": 15.0,
+      "lengthBeats": 1.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 36,
+      "startBeat": 16.0,
+      "lengthBeats": 1.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 31,
+      "startBeat": 17.0,
+      "lengthBeats": 1.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 36,
+      "startBeat": 18.0,
+      "lengthBeats": 1.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 31,
+      "startBeat": 19.0,
+      "lengthBeats": 1.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 33,
+      "startBeat": 20.0,
+      "lengthBeats": 1.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 28,
+      "startBeat": 21.0,
+      "lengthBeats": 1.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 33,
+      "startBeat": 22.0,
+      "lengthBeats": 1.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 28,
+      "startBeat": 23.0,
+      "lengthBeats": 1.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 29,
+      "startBeat": 24.0,
+      "lengthBeats": 1.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 31,
+      "startBeat": 25.0,
+      "lengthBeats": 1.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 36,
+      "startBeat": 26.0,
+      "lengthBeats": 2.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 36,
+      "startBeat": 28.0,
+      "lengthBeats": 4.0,
+      "velocity": 0.8
+    }
+  ],
+  "name": "Classical Bass",
+  "version": 1
+}

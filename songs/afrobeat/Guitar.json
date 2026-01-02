@@ -1,0 +1,295 @@
+{
+  "lengthBars": 8.0,
+  "notes": [
+    {
+      "pitch": 52,
+      "startBeat": 0.0,
+      "lengthBeats": 1.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 55,
+      "startBeat": 0.0,
+      "lengthBeats": 1.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 59,
+      "startBeat": 0.0,
+      "lengthBeats": 1.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 52,
+      "startBeat": 2.0,
+      "lengthBeats": 1.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 55,
+      "startBeat": 2.0,
+      "lengthBeats": 1.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 59,
+      "startBeat": 2.0,
+      "lengthBeats": 1.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 57,
+      "startBeat": 4.0,
+      "lengthBeats": 1.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 48,
+      "startBeat": 4.0,
+      "lengthBeats": 1.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 52,
+      "startBeat": 4.0,
+      "lengthBeats": 1.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 57,
+      "startBeat": 6.0,
+      "lengthBeats": 1.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 48,
+      "startBeat": 6.0,
+      "lengthBeats": 1.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 52,
+      "startBeat": 6.0,
+      "lengthBeats": 1.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 50,
+      "startBeat": 8.0,
+      "lengthBeats": 1.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 53,
+      "startBeat": 8.0,
+      "lengthBeats": 1.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 57,
+      "startBeat": 8.0,
+      "lengthBeats": 1.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 55,
+      "startBeat": 10.0,
+      "lengthBeats": 1.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 59,
+      "startBeat": 10.0,
+      "lengthBeats": 1.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 50,
+      "startBeat": 10.0,
+      "lengthBeats": 1.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 52,
+      "startBeat": 12.0,
+      "lengthBeats": 1.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 55,
+      "startBeat": 12.0,
+      "lengthBeats": 1.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 59,
+      "startBeat": 12.0,
+      "lengthBeats": 1.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 52,
+      "startBeat": 14.0,
+      "lengthBeats": 1.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 55,
+      "startBeat": 14.0,
+      "lengthBeats": 1.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 59,
+      "startBeat": 14.0,
+      "lengthBeats": 1.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 52,
+      "startBeat": 16.0,
+      "lengthBeats": 1.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 55,
+      "startBeat": 16.0,
+      "lengthBeats": 1.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 59,
+      "startBeat": 16.0,
+      "lengthBeats": 1.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 52,
+      "startBeat": 18.0,
+      "lengthBeats": 1.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 55,
+      "startBeat": 18.0,
+      "lengthBeats": 1.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 59,
+      "startBeat": 18.0,
+      "lengthBeats": 1.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 57,
+      "startBeat": 20.0,
+      "lengthBeats": 1.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 48,
+      "startBeat": 20.0,
+      "lengthBeats": 1.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 52,
+      "startBeat": 20.0,
+      "lengthBeats": 1.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 57,
+      "startBeat": 22.0,
+      "lengthBeats": 1.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 48,
+      "startBeat": 22.0,
+      "lengthBeats": 1.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 52,
+      "startBeat": 22.0,
+      "lengthBeats": 1.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 50,
+      "startBeat": 24.0,
+      "lengthBeats": 1.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 53,
+      "startBeat": 24.0,
+      "lengthBeats": 1.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 57,
+      "startBeat": 24.0,
+      "lengthBeats": 1.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 52,
+      "startBeat": 25.0,
+      "lengthBeats": 1.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 55,
+      "startBeat": 25.0,
+      "lengthBeats": 1.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 59,
+      "startBeat": 25.0,
+      "lengthBeats": 1.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 52,
+      "startBeat": 26.0,
+      "lengthBeats": 1.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 55,
+      "startBeat": 26.0,
+      "lengthBeats": 1.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 59,
+      "startBeat": 26.0,
+      "lengthBeats": 1.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 52,
+      "startBeat": 28.0,
+      "lengthBeats": 4.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 55,
+      "startBeat": 28.0,
+      "lengthBeats": 4.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 59,
+      "startBeat": 28.0,
+      "lengthBeats": 4.0,
+      "velocity": 0.8
+    }
+  ],
+  "name": "Afrobeat Rhythm Guitar",
+  "version": 1
+}

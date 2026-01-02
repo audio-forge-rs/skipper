@@ -574,6 +574,47 @@ impl Default for SharedState {
     }
 }
 
+/// Buffer size for track name (safe for stack allocation)
+const TRACK_NAME_BUFFER_SIZE: usize = 256;
+
+/// Thread-safe buffer for track name - can be updated from audio thread without allocation
+struct TrackNameBuffer {
+    bytes: [std::sync::atomic::AtomicU8; TRACK_NAME_BUFFER_SIZE],
+    len: std::sync::atomic::AtomicUsize,
+}
+
+impl TrackNameBuffer {
+    fn new() -> Self {
+        Self {
+            bytes: std::array::from_fn(|_| std::sync::atomic::AtomicU8::new(0)),
+            len: std::sync::atomic::AtomicUsize::new(0),
+        }
+    }
+
+    /// Store track name from audio thread (no allocation)
+    fn store(&self, name: &str) {
+        let bytes = name.as_bytes();
+        let len = bytes.len().min(TRACK_NAME_BUFFER_SIZE);
+        for (i, &b) in bytes.iter().take(len).enumerate() {
+            self.bytes[i].store(b, Ordering::Relaxed);
+        }
+        self.len.store(len, Ordering::Release);
+    }
+
+    /// Load track name from background thread (allocates String)
+    fn load(&self) -> Option<String> {
+        let len = self.len.load(Ordering::Acquire);
+        if len == 0 {
+            return None;
+        }
+        let mut bytes = Vec::with_capacity(len);
+        for i in 0..len {
+            bytes.push(self.bytes[i].load(Ordering::Relaxed));
+        }
+        String::from_utf8(bytes).ok()
+    }
+}
+
 /// The Skipper plugin - displays host and track information
 pub struct Skipper {
     params: Arc<SkipperParams>,
@@ -581,6 +622,8 @@ pub struct Skipper {
     instance_id: u32,
     /// Reload signal - set by audio thread, cleared by background thread
     reload_signal: Arc<std::sync::atomic::AtomicBool>,
+    /// Pending track name from CLAP callback - safe to update from audio thread
+    pending_track_name: Arc<TrackNameBuffer>,
 }
 
 #[derive(Params)]
@@ -598,6 +641,7 @@ impl Default for Skipper {
             state: Arc::new(AtomicRefCell::new(SharedState::default())),
             instance_id,
             reload_signal: Arc::new(std::sync::atomic::AtomicBool::new(false)),
+            pending_track_name: Arc::new(TrackNameBuffer::new()),
         }
     }
 }
@@ -1103,7 +1147,7 @@ impl Plugin for Skipper {
             ..AudioIOLayout::const_default()
         },
     ];
-    const MIDI_INPUT: MidiConfig = MidiConfig::None;
+    const MIDI_INPUT: MidiConfig = MidiConfig::Basic;   // Enable MIDI input for Program Change reload
     const MIDI_OUTPUT: MidiConfig = MidiConfig::Basic;  // Enable MIDI output for note playback
     const SAMPLE_ACCURATE_AUTOMATION: bool = false;
 
@@ -1254,6 +1298,12 @@ impl Plugin for Skipper {
             nih_log!("Track: (no track info available)");
         }
 
+        // Try to load program immediately from file (before background thread)
+        let immediate_track_name = track_info.as_ref()
+            .and_then(|t| t.name.as_ref())
+            .filter(|n| !n.is_empty())
+            .cloned();
+
         {
             let mut state = self.state.borrow_mut();
             state.sample_rate = buffer_config.sample_rate;
@@ -1261,9 +1311,22 @@ impl Plugin for Skipper {
             state.plugin_api = api;
             state.host_info = host_info;
             state.track_info = track_info;
+
+            // Load program immediately if track name is available
+            if let Some(ref name) = immediate_track_name {
+                nih_log!("Attempting immediate program load for track: {}", name);
+                if let Some(program_json) = load_program_from_file(name) {
+                    state.program.load_from_json(&program_json);
+                    nih_log!("Program loaded immediately on init!");
+                } else {
+                    nih_log!("No program file found at init, will retry in background");
+                }
+            } else {
+                nih_log!("No track name at init, will retry in background");
+            }
         }
 
-        // Spawn background thread to load program once track info is available
+        // Spawn background thread as fallback for late track info
         let state_clone = self.state.clone();
         let instance_id = self.instance_id;
         std::thread::spawn(move || {
@@ -1301,30 +1364,41 @@ impl Plugin for Skipper {
             }
         });
 
-        // Spawn background thread to watch for reload signal (triggered by MIDI Program Change)
+        // Spawn background thread to watch for reload signal (triggered by MIDI Program Change or track info update)
         let state_clone2 = self.state.clone();
         let reload_signal = self.reload_signal.clone();
+        let pending_track_name = self.pending_track_name.clone();
         std::thread::spawn(move || {
             loop {
                 std::thread::sleep(std::time::Duration::from_millis(50));
 
                 // Check if reload was signaled
                 if reload_signal.swap(false, Ordering::SeqCst) {
-                    // Get track name from state
-                    let track_name = if let Ok(s) = state_clone2.try_borrow() {
-                        s.track_info.as_ref()
-                            .and_then(|t| t.name.as_ref())
-                            .cloned()
-                    } else {
-                        None
-                    };
+                    // First try pending_track_name buffer (set by audio thread when CLAP callback fires)
+                    // Then fall back to state.track_info (set at init time)
+                    let track_name = pending_track_name.load()
+                        .or_else(|| {
+                            if let Ok(s) = state_clone2.try_borrow() {
+                                s.track_info.as_ref()
+                                    .and_then(|t| t.name.as_ref())
+                                    .cloned()
+                            } else {
+                                None
+                            }
+                        });
 
                     if let Some(name) = track_name {
+                        nih_log!("Background thread loading program for track: {}", name);
                         if let Some(program_json) = load_program_from_file(&name) {
                             if let Ok(mut s) = state_clone2.try_borrow_mut() {
                                 s.program.load_from_json(&program_json);
+                                nih_log!("Program loaded successfully!");
                             }
+                        } else {
+                            nih_log!("No program file found for track: {}", name);
                         }
+                    } else {
+                        nih_log!("Reload signaled but no track name available");
                     }
                 }
             }
@@ -1342,8 +1416,24 @@ impl Plugin for Skipper {
         context: &mut impl ProcessContext<Self>,
     ) -> ProcessStatus {
         // NO LOGGING HERE - audio thread forbids allocation
-        // NOTE: Don't update track_info here - it's set in initialize() and updated
-        // via CLAP changed() callback. Updating here would deallocate on audio thread.
+
+        // Check if track info has become available (CLAP callback may have fired)
+        // This detects when Bitwig sends the track name after init
+        // AUDIO THREAD SAFE: We only copy bytes, no Arc replacement or deallocation
+        if let Some(new_track_info) = context.track_info() {
+            if let Some(ref new_name) = new_track_info.name {
+                if !new_name.is_empty() {
+                    // Check if pending_track_name is empty (not yet set)
+                    let pending_len = self.pending_track_name.len.load(Ordering::Acquire);
+                    if pending_len == 0 {
+                        // Store track name in lock-free buffer (no allocation)
+                        self.pending_track_name.store(new_name);
+                        // Signal background thread to reload
+                        self.reload_signal.store(true, Ordering::SeqCst);
+                    }
+                }
+            }
+        }
 
         // Extract transport values we need (avoids borrow conflicts with context.send_event)
         let (t_tempo, t_time_sig_num, t_time_sig_den, t_pos_samples, t_pos_beats, t_pos_seconds,

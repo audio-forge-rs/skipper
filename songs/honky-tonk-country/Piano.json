@@ -1,0 +1,259 @@
+{
+  "lengthBars": 8.0,
+  "notes": [
+    {
+      "pitch": 31,
+      "startBeat": 0.0,
+      "lengthBeats": 2.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 35,
+      "startBeat": 0.0,
+      "lengthBeats": 2.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 38,
+      "startBeat": 0.0,
+      "lengthBeats": 2.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 31,
+      "startBeat": 2.0,
+      "lengthBeats": 2.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 35,
+      "startBeat": 2.0,
+      "lengthBeats": 2.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 38,
+      "startBeat": 2.0,
+      "lengthBeats": 2.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 36,
+      "startBeat": 4.0,
+      "lengthBeats": 2.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 40,
+      "startBeat": 4.0,
+      "lengthBeats": 2.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 43,
+      "startBeat": 4.0,
+      "lengthBeats": 2.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 36,
+      "startBeat": 6.0,
+      "lengthBeats": 2.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 40,
+      "startBeat": 6.0,
+      "lengthBeats": 2.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 43,
+      "startBeat": 6.0,
+      "lengthBeats": 2.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 38,
+      "startBeat": 8.0,
+      "lengthBeats": 2.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 42,
+      "startBeat": 8.0,
+      "lengthBeats": 2.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 45,
+      "startBeat": 8.0,
+      "lengthBeats": 2.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 38,
+      "startBeat": 10.0,
+      "lengthBeats": 2.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 42,
+      "startBeat": 10.0,
+      "lengthBeats": 2.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 45,
+      "startBeat": 10.0,
+      "lengthBeats": 2.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 31,
+      "startBeat": 12.0,
+      "lengthBeats": 4.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 35,
+      "startBeat": 12.0,
+      "lengthBeats": 4.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 38,
+      "startBeat": 12.0,
+      "lengthBeats": 4.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 31,
+      "startBeat": 16.0,
+      "lengthBeats": 2.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 35,
+      "startBeat": 16.0,
+      "lengthBeats": 2.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 38,
+      "startBeat": 16.0,
+      "lengthBeats": 2.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 31,
+      "startBeat": 18.0,
+      "lengthBeats": 2.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 35,
+      "startBeat": 18.0,
+      "lengthBeats": 2.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 38,
+      "startBeat": 18.0,
+      "lengthBeats": 2.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 36,
+      "startBeat": 20.0,
+      "lengthBeats": 2.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 40,
+      "startBeat": 20.0,
+      "lengthBeats": 2.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 43,
+      "startBeat": 20.0,
+      "lengthBeats": 2.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 36,
+      "startBeat": 22.0,
+      "lengthBeats": 2.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 40,
+      "startBeat": 22.0,
+      "lengthBeats": 2.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 43,
+      "startBeat": 22.0,
+      "lengthBeats": 2.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 38,
+      "startBeat": 24.0,
+      "lengthBeats": 2.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 42,
+      "startBeat": 24.0,
+      "lengthBeats": 2.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 45,
+      "startBeat": 24.0,
+      "lengthBeats": 2.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 31,
+      "startBeat": 26.0,
+      "lengthBeats": 2.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 35,
+      "startBeat": 26.0,
+      "lengthBeats": 2.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 38,
+      "startBeat": 26.0,
+      "lengthBeats": 2.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 31,
+      "startBeat": 28.0,
+      "lengthBeats": 4.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 35,
+      "startBeat": 28.0,
+      "lengthBeats": 4.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 38,
+      "startBeat": 28.0,
+      "lengthBeats": 4.0,
+      "velocity": 0.8
+    }
+  ],
+  "name": "Country Honky Tonk Piano",
+  "version": 1
+}

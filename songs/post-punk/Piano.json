@@ -1,0 +1,277 @@
+{
+  "lengthBars": 8.0,
+  "notes": [
+    {
+      "pitch": 33,
+      "startBeat": 0.0,
+      "lengthBeats": 2.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 40,
+      "startBeat": 0.0,
+      "lengthBeats": 2.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 45,
+      "startBeat": 0.0,
+      "lengthBeats": 2.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 33,
+      "startBeat": 2.0,
+      "lengthBeats": 2.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 40,
+      "startBeat": 2.0,
+      "lengthBeats": 2.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 45,
+      "startBeat": 2.0,
+      "lengthBeats": 2.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 38,
+      "startBeat": 4.0,
+      "lengthBeats": 2.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 45,
+      "startBeat": 4.0,
+      "lengthBeats": 2.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 50,
+      "startBeat": 4.0,
+      "lengthBeats": 2.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 38,
+      "startBeat": 6.0,
+      "lengthBeats": 2.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 45,
+      "startBeat": 6.0,
+      "lengthBeats": 2.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 50,
+      "startBeat": 6.0,
+      "lengthBeats": 2.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 40,
+      "startBeat": 8.0,
+      "lengthBeats": 2.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 47,
+      "startBeat": 8.0,
+      "lengthBeats": 2.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 52,
+      "startBeat": 8.0,
+      "lengthBeats": 2.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 40,
+      "startBeat": 10.0,
+      "lengthBeats": 2.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 47,
+      "startBeat": 10.0,
+      "lengthBeats": 2.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 52,
+      "startBeat": 10.0,
+      "lengthBeats": 2.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 33,
+      "startBeat": 12.0,
+      "lengthBeats": 4.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 40,
+      "startBeat": 12.0,
+      "lengthBeats": 4.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 45,
+      "startBeat": 12.0,
+      "lengthBeats": 4.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 33,
+      "startBeat": 16.0,
+      "lengthBeats": 2.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 40,
+      "startBeat": 16.0,
+      "lengthBeats": 2.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 45,
+      "startBeat": 16.0,
+      "lengthBeats": 2.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 33,
+      "startBeat": 18.0,
+      "lengthBeats": 2.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 40,
+      "startBeat": 18.0,
+      "lengthBeats": 2.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 45,
+      "startBeat": 18.0,
+      "lengthBeats": 2.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 38,
+      "startBeat": 20.0,
+      "lengthBeats": 2.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 45,
+      "startBeat": 20.0,
+      "lengthBeats": 2.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 50,
+      "startBeat": 20.0,
+      "lengthBeats": 2.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 38,
+      "startBeat": 22.0,
+      "lengthBeats": 2.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 45,
+      "startBeat": 22.0,
+      "lengthBeats": 2.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 50,
+      "startBeat": 22.0,
+      "lengthBeats": 2.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 40,
+      "startBeat": 24.0,
+      "lengthBeats": 1.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 47,
+      "startBeat": 24.0,
+      "lengthBeats": 1.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 52,
+      "startBeat": 24.0,
+      "lengthBeats": 1.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 38,
+      "startBeat": 25.0,
+      "lengthBeats": 1.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 45,
+      "startBeat": 25.0,
+      "lengthBeats": 1.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 50,
+      "startBeat": 25.0,
+      "lengthBeats": 1.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 33,
+      "startBeat": 26.0,
+      "lengthBeats": 2.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 40,
+      "startBeat": 26.0,
+      "lengthBeats": 2.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 45,
+      "startBeat": 26.0,
+      "lengthBeats": 2.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 33,
+      "startBeat": 28.0,
+      "lengthBeats": 4.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 40,
+      "startBeat": 28.0,
+      "lengthBeats": 4.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 45,
+      "startBeat": 28.0,
+      "lengthBeats": 4.0,
+      "velocity": 0.8
+    }
+  ],
+  "name": "Post-Punk Synth",
+  "version": 1
+}

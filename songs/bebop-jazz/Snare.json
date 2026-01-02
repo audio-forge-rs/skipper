@@ -1,0 +1,103 @@
+{
+  "lengthBars": 8.0,
+  "notes": [
+    {
+      "pitch": 36,
+      "startBeat": 1.0,
+      "lengthBeats": 0.5,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 36,
+      "startBeat": 3.0,
+      "lengthBeats": 0.5,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 36,
+      "startBeat": 5.0,
+      "lengthBeats": 0.5,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 36,
+      "startBeat": 7.0,
+      "lengthBeats": 0.5,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 36,
+      "startBeat": 9.0,
+      "lengthBeats": 0.5,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 36,
+      "startBeat": 11.0,
+      "lengthBeats": 0.5,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 36,
+      "startBeat": 13.0,
+      "lengthBeats": 0.5,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 36,
+      "startBeat": 15.0,
+      "lengthBeats": 0.5,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 36,
+      "startBeat": 17.0,
+      "lengthBeats": 0.5,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 36,
+      "startBeat": 19.0,
+      "lengthBeats": 0.5,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 36,
+      "startBeat": 21.0,
+      "lengthBeats": 0.5,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 36,
+      "startBeat": 23.0,
+      "lengthBeats": 0.5,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 36,
+      "startBeat": 25.0,
+      "lengthBeats": 0.5,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 36,
+      "startBeat": 27.0,
+      "lengthBeats": 0.5,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 36,
+      "startBeat": 29.0,
+      "lengthBeats": 0.5,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 36,
+      "startBeat": 31.0,
+      "lengthBeats": 0.5,
+      "velocity": 0.8
+    }
+  ],
+  "name": "Jazz Brushes Snare",
+  "version": 1
+}

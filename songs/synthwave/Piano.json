@@ -1,0 +1,223 @@
+{
+  "lengthBars": 8.0,
+  "notes": [
+    {
+      "pitch": 33,
+      "startBeat": 0.0,
+      "lengthBeats": 4.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 40,
+      "startBeat": 0.0,
+      "lengthBeats": 4.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 45,
+      "startBeat": 0.0,
+      "lengthBeats": 4.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 48,
+      "startBeat": 0.0,
+      "lengthBeats": 4.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 38,
+      "startBeat": 4.0,
+      "lengthBeats": 4.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 45,
+      "startBeat": 4.0,
+      "lengthBeats": 4.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 38,
+      "startBeat": 4.0,
+      "lengthBeats": 4.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 53,
+      "startBeat": 4.0,
+      "lengthBeats": 4.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 40,
+      "startBeat": 8.0,
+      "lengthBeats": 4.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 47,
+      "startBeat": 8.0,
+      "lengthBeats": 4.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 40,
+      "startBeat": 8.0,
+      "lengthBeats": 4.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 55,
+      "startBeat": 8.0,
+      "lengthBeats": 4.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 33,
+      "startBeat": 12.0,
+      "lengthBeats": 4.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 40,
+      "startBeat": 12.0,
+      "lengthBeats": 4.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 45,
+      "startBeat": 12.0,
+      "lengthBeats": 4.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 48,
+      "startBeat": 12.0,
+      "lengthBeats": 4.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 33,
+      "startBeat": 16.0,
+      "lengthBeats": 4.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 40,
+      "startBeat": 16.0,
+      "lengthBeats": 4.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 45,
+      "startBeat": 16.0,
+      "lengthBeats": 4.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 48,
+      "startBeat": 16.0,
+      "lengthBeats": 4.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 38,
+      "startBeat": 20.0,
+      "lengthBeats": 4.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 45,
+      "startBeat": 20.0,
+      "lengthBeats": 4.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 38,
+      "startBeat": 20.0,
+      "lengthBeats": 4.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 53,
+      "startBeat": 20.0,
+      "lengthBeats": 4.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 40,
+      "startBeat": 24.0,
+      "lengthBeats": 2.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 47,
+      "startBeat": 24.0,
+      "lengthBeats": 2.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 40,
+      "startBeat": 24.0,
+      "lengthBeats": 2.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 55,
+      "startBeat": 24.0,
+      "lengthBeats": 2.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 38,
+      "startBeat": 26.0,
+      "lengthBeats": 2.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 45,
+      "startBeat": 26.0,
+      "lengthBeats": 2.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 38,
+      "startBeat": 26.0,
+      "lengthBeats": 2.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 53,
+      "startBeat": 26.0,
+      "lengthBeats": 2.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 33,
+      "startBeat": 28.0,
+      "lengthBeats": 4.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 40,
+      "startBeat": 28.0,
+      "lengthBeats": 4.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 45,
+      "startBeat": 28.0,
+      "lengthBeats": 4.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 48,
+      "startBeat": 28.0,
+      "lengthBeats": 4.0,
+      "velocity": 0.8
+    }
+  ],
+  "name": "Synthwave Pads",
+  "version": 1
+}

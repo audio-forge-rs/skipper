@@ -1,0 +1,199 @@
+{
+  "lengthBars": 16.0,
+  "notes": [
+    {
+      "pitch": 36,
+      "startBeat": 1.0,
+      "lengthBeats": 0.5,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 36,
+      "startBeat": 2.5,
+      "lengthBeats": 0.5,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 36,
+      "startBeat": 4.0,
+      "lengthBeats": 0.5,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 36,
+      "startBeat": 5.5,
+      "lengthBeats": 0.5,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 36,
+      "startBeat": 7.0,
+      "lengthBeats": 0.5,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 36,
+      "startBeat": 8.5,
+      "lengthBeats": 0.5,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 36,
+      "startBeat": 10.0,
+      "lengthBeats": 0.5,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 36,
+      "startBeat": 11.5,
+      "lengthBeats": 0.5,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 36,
+      "startBeat": 13.0,
+      "lengthBeats": 0.5,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 36,
+      "startBeat": 14.5,
+      "lengthBeats": 0.5,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 36,
+      "startBeat": 16.0,
+      "lengthBeats": 0.5,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 36,
+      "startBeat": 17.5,
+      "lengthBeats": 0.5,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 36,
+      "startBeat": 19.0,
+      "lengthBeats": 0.5,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 36,
+      "startBeat": 20.5,
+      "lengthBeats": 0.5,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 36,
+      "startBeat": 22.0,
+      "lengthBeats": 0.5,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 36,
+      "startBeat": 23.5,
+      "lengthBeats": 0.5,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 36,
+      "startBeat": 25.0,
+      "lengthBeats": 0.5,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 36,
+      "startBeat": 26.5,
+      "lengthBeats": 0.5,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 36,
+      "startBeat": 28.0,
+      "lengthBeats": 0.5,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 36,
+      "startBeat": 29.5,
+      "lengthBeats": 0.5,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 36,
+      "startBeat": 31.0,
+      "lengthBeats": 0.5,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 36,
+      "startBeat": 32.5,
+      "lengthBeats": 0.5,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 36,
+      "startBeat": 34.0,
+      "lengthBeats": 0.5,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 36,
+      "startBeat": 35.5,
+      "lengthBeats": 0.5,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 36,
+      "startBeat": 37.0,
+      "lengthBeats": 0.5,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 36,
+      "startBeat": 38.5,
+      "lengthBeats": 0.5,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 36,
+      "startBeat": 40.0,
+      "lengthBeats": 0.5,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 36,
+      "startBeat": 41.5,
+      "lengthBeats": 0.5,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 36,
+      "startBeat": 43.0,
+      "lengthBeats": 0.5,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 36,
+      "startBeat": 44.5,
+      "lengthBeats": 0.5,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 36,
+      "startBeat": 46.0,
+      "lengthBeats": 0.5,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 36,
+      "startBeat": 47.5,
+      "lengthBeats": 0.5,
+      "velocity": 0.8
+    }
+  ],
+  "name": "Blast Beat Snare",
+  "version": 1
+}

@@ -1,0 +1,103 @@
+{
+  "lengthBars": 8.0,
+  "notes": [
+    {
+      "pitch": 36,
+      "startBeat": 1.0,
+      "lengthBeats": 0.5,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 36,
+      "startBeat": 2.0,
+      "lengthBeats": 1.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 36,
+      "startBeat": 5.0,
+      "lengthBeats": 0.5,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 36,
+      "startBeat": 6.0,
+      "lengthBeats": 1.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 36,
+      "startBeat": 9.0,
+      "lengthBeats": 0.5,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 36,
+      "startBeat": 10.0,
+      "lengthBeats": 1.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 36,
+      "startBeat": 13.0,
+      "lengthBeats": 0.5,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 36,
+      "startBeat": 14.0,
+      "lengthBeats": 1.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 36,
+      "startBeat": 17.0,
+      "lengthBeats": 0.5,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 36,
+      "startBeat": 18.0,
+      "lengthBeats": 1.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 36,
+      "startBeat": 21.0,
+      "lengthBeats": 0.5,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 36,
+      "startBeat": 22.0,
+      "lengthBeats": 1.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 36,
+      "startBeat": 25.0,
+      "lengthBeats": 0.5,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 36,
+      "startBeat": 26.0,
+      "lengthBeats": 1.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 36,
+      "startBeat": 29.0,
+      "lengthBeats": 0.5,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 36,
+      "startBeat": 30.0,
+      "lengthBeats": 1.0,
+      "velocity": 0.8
+    }
+  ],
+  "name": "Afrobeat Snare",
+  "version": 1
+}

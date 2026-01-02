@@ -1,0 +1,151 @@
+{
+  "lengthBars": 8.0,
+  "notes": [
+    {
+      "pitch": 36,
+      "startBeat": 0.0,
+      "lengthBeats": 1.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 36,
+      "startBeat": 2.0,
+      "lengthBeats": 0.5,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 36,
+      "startBeat": 2.5,
+      "lengthBeats": 0.5,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 36,
+      "startBeat": 4.0,
+      "lengthBeats": 1.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 36,
+      "startBeat": 6.0,
+      "lengthBeats": 0.5,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 36,
+      "startBeat": 6.5,
+      "lengthBeats": 0.5,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 36,
+      "startBeat": 8.0,
+      "lengthBeats": 1.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 36,
+      "startBeat": 10.0,
+      "lengthBeats": 0.5,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 36,
+      "startBeat": 10.5,
+      "lengthBeats": 0.5,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 36,
+      "startBeat": 12.0,
+      "lengthBeats": 1.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 36,
+      "startBeat": 14.0,
+      "lengthBeats": 0.5,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 36,
+      "startBeat": 14.5,
+      "lengthBeats": 0.5,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 36,
+      "startBeat": 16.0,
+      "lengthBeats": 1.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 36,
+      "startBeat": 18.0,
+      "lengthBeats": 0.5,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 36,
+      "startBeat": 18.5,
+      "lengthBeats": 0.5,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 36,
+      "startBeat": 20.0,
+      "lengthBeats": 1.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 36,
+      "startBeat": 22.0,
+      "lengthBeats": 0.5,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 36,
+      "startBeat": 22.5,
+      "lengthBeats": 0.5,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 36,
+      "startBeat": 24.0,
+      "lengthBeats": 1.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 36,
+      "startBeat": 26.0,
+      "lengthBeats": 0.5,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 36,
+      "startBeat": 26.5,
+      "lengthBeats": 0.5,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 36,
+      "startBeat": 28.0,
+      "lengthBeats": 1.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 36,
+      "startBeat": 30.0,
+      "lengthBeats": 0.5,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 36,
+      "startBeat": 30.5,
+      "lengthBeats": 0.5,
+      "velocity": 0.8
+    }
+  ],
+  "name": "Afrobeat Kick",
+  "version": 1
+}

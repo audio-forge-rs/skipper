@@ -1,0 +1,169 @@
+{
+  "lengthBars": 8.0,
+  "notes": [
+    {
+      "pitch": 52,
+      "startBeat": 0.0,
+      "lengthBeats": 4.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 55,
+      "startBeat": 0.0,
+      "lengthBeats": 4.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 59,
+      "startBeat": 0.0,
+      "lengthBeats": 4.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 48,
+      "startBeat": 4.0,
+      "lengthBeats": 4.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 52,
+      "startBeat": 4.0,
+      "lengthBeats": 4.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 55,
+      "startBeat": 4.0,
+      "lengthBeats": 4.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 50,
+      "startBeat": 8.0,
+      "lengthBeats": 4.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 53,
+      "startBeat": 8.0,
+      "lengthBeats": 4.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 57,
+      "startBeat": 8.0,
+      "lengthBeats": 4.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 57,
+      "startBeat": 12.0,
+      "lengthBeats": 4.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 48,
+      "startBeat": 12.0,
+      "lengthBeats": 4.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 52,
+      "startBeat": 12.0,
+      "lengthBeats": 4.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 52,
+      "startBeat": 16.0,
+      "lengthBeats": 4.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 55,
+      "startBeat": 16.0,
+      "lengthBeats": 4.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 59,
+      "startBeat": 16.0,
+      "lengthBeats": 4.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 48,
+      "startBeat": 20.0,
+      "lengthBeats": 4.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 52,
+      "startBeat": 20.0,
+      "lengthBeats": 4.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 55,
+      "startBeat": 20.0,
+      "lengthBeats": 4.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 50,
+      "startBeat": 24.0,
+      "lengthBeats": 2.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 53,
+      "startBeat": 24.0,
+      "lengthBeats": 2.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 57,
+      "startBeat": 24.0,
+      "lengthBeats": 2.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 57,
+      "startBeat": 26.0,
+      "lengthBeats": 2.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 48,
+      "startBeat": 26.0,
+      "lengthBeats": 2.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 52,
+      "startBeat": 26.0,
+      "lengthBeats": 2.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 52,
+      "startBeat": 28.0,
+      "lengthBeats": 4.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 55,
+      "startBeat": 28.0,
+      "lengthBeats": 4.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 59,
+      "startBeat": 28.0,
+      "lengthBeats": 4.0,
+      "velocity": 0.8
+    }
+  ],
+  "name": "Grunge Power Chords",
+  "version": 1
+}

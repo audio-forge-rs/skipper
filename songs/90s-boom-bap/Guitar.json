@@ -1,0 +1,115 @@
+{
+  "lengthBars": 8.0,
+  "notes": [
+    {
+      "pitch": 57,
+      "startBeat": 6.0,
+      "lengthBeats": 0.5,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 48,
+      "startBeat": 6.0,
+      "lengthBeats": 0.5,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 52,
+      "startBeat": 6.0,
+      "lengthBeats": 0.5,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 55,
+      "startBeat": 14.0,
+      "lengthBeats": 0.5,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 59,
+      "startBeat": 14.0,
+      "lengthBeats": 0.5,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 62,
+      "startBeat": 14.0,
+      "lengthBeats": 0.5,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 57,
+      "startBeat": 22.0,
+      "lengthBeats": 0.5,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 48,
+      "startBeat": 22.0,
+      "lengthBeats": 0.5,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 52,
+      "startBeat": 22.0,
+      "lengthBeats": 0.5,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 57,
+      "startBeat": 24.0,
+      "lengthBeats": 0.5,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 48,
+      "startBeat": 24.0,
+      "lengthBeats": 0.5,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 52,
+      "startBeat": 24.0,
+      "lengthBeats": 0.5,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 55,
+      "startBeat": 25.0,
+      "lengthBeats": 0.5,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 59,
+      "startBeat": 25.0,
+      "lengthBeats": 0.5,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 62,
+      "startBeat": 25.0,
+      "lengthBeats": 0.5,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 53,
+      "startBeat": 28.0,
+      "lengthBeats": 4.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 57,
+      "startBeat": 28.0,
+      "lengthBeats": 4.0,
+      "velocity": 0.8
+    },
+    {
+      "pitch": 60,
+      "startBeat": 28.0,
+      "lengthBeats": 4.0,
+      "velocity": 0.8
+    }
+  ],
+  "name": "90s Hip Hop Sample Chops",
+  "version": 1
+}

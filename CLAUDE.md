@@ -51,6 +51,7 @@ python tools/gilligan.py workflow --track Bass --abc 'C, G, E, G, |'
 
 ## Quick Reference
 
+See @docs/DJ.md for DJ mode and song creation.
 See @docs/BITWIG-DEVELOPMENT.md for technical debugging reference.
 See @docs/UNDERSTANDING-BITWIG-DEVELOPMENT.md for human-readable overview.
 
