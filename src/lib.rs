@@ -859,6 +859,7 @@ impl Plugin for Skipper {
         // Use try_borrow_mut to avoid panic if GUI is reading state
         // If contention, skip this update - GUI will get next one
         if let Ok(mut state) = self.state.try_borrow_mut() {
+            // Update transport state for GUI
             state.transport.tempo = transport.tempo;
             state.transport.time_sig_numerator = transport.time_sig_numerator;
             state.transport.time_sig_denominator = transport.time_sig_denominator;
@@ -871,6 +872,95 @@ impl Plugin for Skipper {
             if let Some((start, end)) = transport.loop_range_beats() {
                 state.transport.loop_start_beats = Some(start);
                 state.transport.loop_end_beats = Some(end);
+            }
+
+            // === MIDI Note Emission ===
+            // Only emit notes if playing and we have a loaded program
+            if transport.playing && state.program.loaded {
+                if let Some(pos_beats) = transport.pos_beats() {
+                    let program_length = state.program.length_beats;
+                    if program_length > 0.0 {
+                        // Calculate position within program (looping)
+                        let program_beat = pos_beats % program_length;
+                        let last_beat = state.last_program_beat;
+
+                        // Detect if we wrapped around (new loop iteration)
+                        let wrapped = program_beat < last_beat && last_beat > 0.0;
+
+                        // Check each note for note-on and note-off events
+                        for i in 0..state.program.note_count {
+                            let note = &state.program.notes[i];
+                            if !note.active {
+                                continue;
+                            }
+
+                            let note_start = note.start_beat;
+                            let note_end = note.start_beat + note.length_beats;
+                            let pitch = note.pitch;
+
+                            // Note-on: trigger if we just crossed the start beat
+                            let should_trigger = if wrapped {
+                                // We wrapped - check if note is at start of program
+                                // or if we crossed it during the wrap
+                                note_start <= program_beat || note_start > last_beat
+                            } else {
+                                // Normal case: did we cross the start beat?
+                                note_start > last_beat && note_start <= program_beat
+                            };
+
+                            if should_trigger && !state.active_notes.is_playing(pitch) {
+                                // Send note-on
+                                let velocity = (note.velocity * 127.0) as u8;
+                                context.send_event(NoteEvent::NoteOn {
+                                    timing: 0,
+                                    voice_id: None,
+                                    channel: 0,
+                                    note: pitch,
+                                    velocity: note.velocity,
+                                });
+                                state.active_notes.set_playing(pitch, note_end);
+                            }
+
+                            // Note-off: trigger if we crossed the end beat
+                            if state.active_notes.is_playing(pitch) {
+                                let note_end_beat = state.active_notes.end_beats[pitch as usize];
+                                let should_end = if wrapped {
+                                    note_end_beat > last_beat || note_end_beat <= program_beat
+                                } else {
+                                    note_end_beat > last_beat && note_end_beat <= program_beat
+                                };
+
+                                if should_end {
+                                    context.send_event(NoteEvent::NoteOff {
+                                        timing: 0,
+                                        voice_id: None,
+                                        channel: 0,
+                                        note: pitch,
+                                        velocity: 0.0,
+                                    });
+                                    state.active_notes.clear_playing(pitch);
+                                }
+                            }
+                        }
+
+                        state.last_program_beat = program_beat;
+                    }
+                }
+            } else if !transport.playing {
+                // Transport stopped - send note-off for all active notes
+                for pitch in 0u8..128 {
+                    if state.active_notes.is_playing(pitch) {
+                        context.send_event(NoteEvent::NoteOff {
+                            timing: 0,
+                            voice_id: None,
+                            channel: 0,
+                            note: pitch,
+                            velocity: 0.0,
+                        });
+                        state.active_notes.clear_playing(pitch);
+                    }
+                }
+                state.last_program_beat = -1.0;
             }
         }
 
