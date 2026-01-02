@@ -624,6 +624,10 @@ pub struct Skipper {
     reload_signal: Arc<std::sync::atomic::AtomicBool>,
     /// Pending track name from CLAP callback - safe to update from audio thread
     pending_track_name: Arc<TrackNameBuffer>,
+    /// Counter for received MIDI events (for debugging)
+    midi_event_count: Arc<std::sync::atomic::AtomicU32>,
+    /// Counter for Program Change events specifically
+    program_change_count: Arc<std::sync::atomic::AtomicU32>,
 }
 
 #[derive(Params)]
@@ -642,6 +646,8 @@ impl Default for Skipper {
             instance_id,
             reload_signal: Arc::new(std::sync::atomic::AtomicBool::new(false)),
             pending_track_name: Arc::new(TrackNameBuffer::new()),
+            midi_event_count: Arc::new(std::sync::atomic::AtomicU32::new(0)),
+            program_change_count: Arc::new(std::sync::atomic::AtomicU32::new(0)),
         }
     }
 }
@@ -1364,42 +1370,72 @@ impl Plugin for Skipper {
             }
         });
 
-        // Spawn background thread to watch for reload signal (triggered by MIDI Program Change or track info update)
+        // Spawn background thread to watch for file changes and reload signals
         let state_clone2 = self.state.clone();
         let reload_signal = self.reload_signal.clone();
         let pending_track_name = self.pending_track_name.clone();
+        let midi_event_count = self.midi_event_count.clone();
+        let program_change_count = self.program_change_count.clone();
         std::thread::spawn(move || {
+            let mut last_modified: Option<std::time::SystemTime> = None;
+            let mut last_log_time = std::time::Instant::now();
+            let mut last_midi_count = 0u32;
+            let mut last_pc_count = 0u32;
+
             loop {
-                std::thread::sleep(std::time::Duration::from_millis(50));
+                std::thread::sleep(std::time::Duration::from_millis(100));
 
-                // Check if reload was signaled
-                if reload_signal.swap(false, Ordering::SeqCst) {
-                    // First try pending_track_name buffer (set by audio thread when CLAP callback fires)
-                    // Then fall back to state.track_info (set at init time)
-                    let track_name = pending_track_name.load()
-                        .or_else(|| {
-                            if let Ok(s) = state_clone2.try_borrow() {
-                                s.track_info.as_ref()
-                                    .and_then(|t| t.name.as_ref())
-                                    .cloned()
-                            } else {
-                                None
-                            }
-                        });
-
-                    if let Some(name) = track_name {
-                        nih_log!("Background thread loading program for track: {}", name);
-                        if let Some(program_json) = load_program_from_file(&name) {
-                            if let Ok(mut s) = state_clone2.try_borrow_mut() {
-                                s.program.load_from_json(&program_json);
-                                nih_log!("Program loaded successfully!");
-                            }
-                        } else {
-                            nih_log!("No program file found for track: {}", name);
-                        }
-                    } else {
-                        nih_log!("Reload signaled but no track name available");
+                // Log MIDI stats every 5 seconds if there's activity
+                if last_log_time.elapsed().as_secs() >= 5 {
+                    let midi_count = midi_event_count.load(Ordering::Relaxed);
+                    let pc_count = program_change_count.load(Ordering::Relaxed);
+                    if midi_count != last_midi_count || pc_count != last_pc_count {
+                        nih_log!("MIDI stats: {} events, {} program changes", midi_count, pc_count);
+                        last_midi_count = midi_count;
+                        last_pc_count = pc_count;
                     }
+                    last_log_time = std::time::Instant::now();
+                }
+
+                // Get track name from pending buffer or state
+                let track_name = pending_track_name.load()
+                    .or_else(|| {
+                        if let Ok(s) = state_clone2.try_borrow() {
+                            s.track_info.as_ref()
+                                .and_then(|t| t.name.as_ref())
+                                .cloned()
+                        } else {
+                            None
+                        }
+                    });
+
+                let Some(name) = track_name else {
+                    continue;
+                };
+
+                // Check if file has changed (poll-based watching)
+                let file_path = format!("/tmp/skipper/{}.json", name);
+                let current_modified = std::fs::metadata(&file_path)
+                    .and_then(|m| m.modified())
+                    .ok();
+
+                let should_reload = reload_signal.swap(false, Ordering::SeqCst)
+                    || (current_modified.is_some() && current_modified != last_modified);
+
+                if should_reload {
+                    if let Some(program_json) = load_program_from_file(&name) {
+                        if let Ok(mut s) = state_clone2.try_borrow_mut() {
+                            let old_version = s.program.version;
+                            s.program.load_from_json(&program_json);
+                            if s.program.version != old_version || last_modified.is_none() {
+                                let name_str = std::str::from_utf8(&s.program.name)
+                                    .unwrap_or("?")
+                                    .trim_end_matches('\0');
+                                nih_log!("Loaded: {} (v{})", name_str, s.program.version);
+                            }
+                        }
+                    }
+                    last_modified = current_modified;
                 }
             }
         });
@@ -1444,9 +1480,11 @@ impl Plugin for Skipper {
              transport.playing, transport.recording, transport.loop_range_beats())
         };
 
-        // Check for Program Change message (standard MIDI way to change programs)
+        // Check for MIDI events - count all events and look for Program Change
         while let Some(event) = context.next_event() {
+            self.midi_event_count.fetch_add(1, Ordering::Relaxed);
             if let NoteEvent::MidiProgramChange { .. } = event {
+                self.program_change_count.fetch_add(1, Ordering::Relaxed);
                 // Signal background thread to reload from file
                 self.reload_signal.store(true, Ordering::SeqCst);
             }
@@ -1543,8 +1581,7 @@ impl Plugin for Skipper {
                             };
 
                             if should_trigger && !state.active_notes.is_playing(pitch) {
-                                // Send note-on
-                                let velocity = (note.velocity * 127.0) as u8;
+                                // Send note-on (velocity is 0.0-1.0 for NoteEvent)
                                 context.send_event(NoteEvent::NoteOn {
                                     timing: 0,
                                     voice_id: None,
