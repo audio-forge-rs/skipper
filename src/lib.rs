@@ -12,7 +12,8 @@ static INSTANCE_COUNTER: AtomicU32 = AtomicU32::new(0);
 #[repr(u8)]
 enum Tab {
     Live = 0,
-    Info = 1,
+    Program = 1,
+    Info = 2,
 }
 
 /// Maximum notes per program (pre-allocated to avoid audio thread allocs)
@@ -555,6 +556,139 @@ fn render_live_tab(ui: &mut egui::Ui, shared: &SharedState, track_info: &Option<
         });
 }
 
+/// Render the Program tab showing staged/current program
+fn render_program_tab(ui: &mut egui::Ui, shared: &SharedState) {
+    egui::ScrollArea::vertical()
+        .auto_shrink([false, false])
+        .show(ui, |ui| {
+            let program = &shared.program;
+
+            // Program header
+            ui.heading("Staged Program");
+            ui.add_space(8.0);
+
+            if program.loaded {
+                // Program name and version with colored badge
+                ui.horizontal(|ui| {
+                    let badge_color = egui::Color32::from_rgb(100, 200, 100);
+                    ui.label(egui::RichText::new("●").color(badge_color).size(16.0));
+                    ui.label(egui::RichText::new(program.get_name()).size(18.0).strong());
+                    ui.label(egui::RichText::new(format!("v{}", program.version))
+                        .size(14.0)
+                        .color(egui::Color32::GRAY));
+                });
+
+                ui.add_space(4.0);
+
+                // Program stats
+                ui.horizontal(|ui| {
+                    ui.label(format!("{} bars", program.length_bars));
+                    ui.label("•");
+                    ui.label(format!("{} beats", program.length_beats));
+                    ui.label("•");
+                    ui.label(format!("{} notes", program.note_count));
+                });
+
+                ui.add_space(16.0);
+                ui.separator();
+                ui.add_space(8.0);
+
+                // Note list
+                ui.heading("Notes");
+                ui.add_space(4.0);
+
+                // Column headers
+                ui.horizontal(|ui| {
+                    ui.label(egui::RichText::new("Bar").size(12.0).color(egui::Color32::GRAY));
+                    ui.add_space(20.0);
+                    ui.label(egui::RichText::new("Beat").size(12.0).color(egui::Color32::GRAY));
+                    ui.add_space(20.0);
+                    ui.label(egui::RichText::new("Note").size(12.0).color(egui::Color32::GRAY));
+                    ui.add_space(20.0);
+                    ui.label(egui::RichText::new("Len").size(12.0).color(egui::Color32::GRAY));
+                });
+
+                ui.add_space(4.0);
+
+                // Note rows
+                for i in 0..program.note_count {
+                    let note = &program.notes[i];
+                    if !note.active {
+                        continue;
+                    }
+
+                    let bar = (note.start_beat / 4.0).floor() as i32 + 1;
+                    let beat = (note.start_beat % 4.0) + 1.0;
+                    let note_name = StagedProgram::pitch_to_name(note.pitch);
+
+                    // Highlight current beat position
+                    let is_current = if let Some(pos_beats) = shared.transport.pos_beats {
+                        let program_beat = pos_beats % program.length_beats;
+                        program_beat >= note.start_beat &&
+                            program_beat < note.start_beat + note.length_beats
+                    } else {
+                        false
+                    };
+
+                    let text_color = if is_current {
+                        egui::Color32::from_rgb(100, 255, 100)
+                    } else {
+                        egui::Color32::WHITE
+                    };
+
+                    ui.horizontal(|ui| {
+                        ui.label(egui::RichText::new(format!("{:2}", bar))
+                            .monospace()
+                            .color(text_color));
+                        ui.add_space(24.0);
+                        ui.label(egui::RichText::new(format!("{:.1}", beat))
+                            .monospace()
+                            .color(text_color));
+                        ui.add_space(20.0);
+                        ui.label(egui::RichText::new(format!("{:4}", note_name))
+                            .monospace()
+                            .strong()
+                            .color(text_color));
+                        ui.add_space(16.0);
+                        ui.label(egui::RichText::new(format!("{:.1}", note.length_beats))
+                            .monospace()
+                            .color(text_color));
+                    });
+                }
+
+                ui.add_space(16.0);
+                ui.separator();
+                ui.add_space(8.0);
+
+                // Current position in program
+                ui.heading("Playback");
+                if let Some(pos_beats) = shared.transport.pos_beats {
+                    let program_beat = pos_beats % program.length_beats;
+                    let program_bar = (program_beat / 4.0).floor() as i32 + 1;
+                    let beat_in_bar = (program_beat % 4.0) + 1.0;
+
+                    ui.label(egui::RichText::new(
+                        format!("Program position: Bar {} Beat {:.2}", program_bar, beat_in_bar)
+                    ).size(16.0).monospace());
+
+                    ui.label(format!("Transport position: {:.2} beats", pos_beats));
+                } else {
+                    ui.label("(transport position unavailable)");
+                }
+            } else {
+                // No program loaded
+                ui.label(egui::RichText::new("No program loaded").size(16.0).color(egui::Color32::GRAY));
+                ui.add_space(16.0);
+
+                // Load test button placeholder
+                ui.label("Use Gilligan CLI to load a program:");
+                ui.label(egui::RichText::new("gilligan.py workflow --track Piano --abc 'c d e f'")
+                    .monospace()
+                    .size(12.0));
+            }
+        });
+}
+
 impl Plugin for Skipper {
     const NAME: &'static str = "Skipper";
     const VENDOR: &'static str = "Audio Forge RS";
@@ -610,6 +744,11 @@ impl Plugin for Skipper {
                                 s.current_tab = Tab::Live;
                             }
                         }
+                        if ui.selectable_label(current_tab == Tab::Program, "Program").clicked() {
+                            if let Ok(mut s) = state.try_borrow_mut() {
+                                s.current_tab = Tab::Program;
+                            }
+                        }
                         if ui.selectable_label(current_tab == Tab::Info, "Info").clicked() {
                             if let Ok(mut s) = state.try_borrow_mut() {
                                 s.current_tab = Tab::Info;
@@ -627,6 +766,9 @@ impl Plugin for Skipper {
                     match current_tab {
                         Tab::Live => {
                             render_live_tab(ui, &shared, &track_info);
+                        }
+                        Tab::Program => {
+                            render_program_tab(ui, &shared);
                         }
                         Tab::Info => {
                             let info_text = build_info_text(&shared, &track_info);
@@ -692,6 +834,10 @@ impl Plugin for Skipper {
             state.plugin_api = api;
             state.host_info = host_info;
             state.track_info = track_info;
+
+            // Load test program for development
+            nih_log!("Loading test program...");
+            state.program.load_test_program();
         }
 
         nih_log!("Skipper initialized successfully (id={})", self.instance_id);
