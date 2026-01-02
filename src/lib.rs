@@ -1,7 +1,7 @@
 use atomic_refcell::AtomicRefCell;
 use nih_plug::prelude::*;
 use nih_plug_egui::{create_egui_editor, egui, EguiState};
-use std::sync::atomic::{AtomicU32, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
 use std::sync::Arc;
 
 /// Global counter for unique plugin instance IDs
@@ -13,6 +13,198 @@ static INSTANCE_COUNTER: AtomicU32 = AtomicU32::new(0);
 enum Tab {
     Live = 0,
     Info = 1,
+}
+
+/// Maximum notes per program (pre-allocated to avoid audio thread allocs)
+const MAX_NOTES: usize = 256;
+
+/// A single MIDI note in a program
+#[derive(Clone, Copy, Default)]
+struct ProgramNote {
+    pitch: u8,           // MIDI pitch 0-127
+    velocity: f32,       // 0.0-1.0
+    start_beat: f64,     // Start position in beats from program start
+    length_beats: f64,   // Duration in beats
+    active: bool,        // Is this slot in use?
+}
+
+/// Fixed-size string for program names (no heap allocation)
+const MAX_NAME_LEN: usize = 64;
+
+/// A staged MIDI program (pre-allocated, fixed size)
+#[derive(Clone)]
+struct StagedProgram {
+    name: [u8; MAX_NAME_LEN],   // Program name (UTF-8, null-terminated)
+    name_len: usize,
+    version: u32,               // Program version (increments on each load)
+    notes: [ProgramNote; MAX_NOTES],
+    note_count: usize,
+    length_bars: f64,           // Program length in bars (power of 2)
+    length_beats: f64,          // Cached: length_bars * beats_per_bar
+    loaded: bool,               // Is a program loaded?
+}
+
+impl Default for StagedProgram {
+    fn default() -> Self {
+        Self {
+            name: [0u8; MAX_NAME_LEN],
+            name_len: 0,
+            version: 0,
+            notes: [ProgramNote::default(); MAX_NOTES],
+            note_count: 0,
+            length_bars: 4.0,
+            length_beats: 16.0, // 4 bars * 4 beats
+            loaded: false,
+        }
+    }
+}
+
+impl StagedProgram {
+    /// Set program name (copies into fixed buffer)
+    fn set_name(&mut self, name: &str) {
+        let bytes = name.as_bytes();
+        let len = bytes.len().min(MAX_NAME_LEN - 1);
+        self.name[..len].copy_from_slice(&bytes[..len]);
+        self.name[len] = 0; // null terminate
+        self.name_len = len;
+    }
+
+    /// Get program name as string slice
+    fn get_name(&self) -> &str {
+        std::str::from_utf8(&self.name[..self.name_len]).unwrap_or("(invalid)")
+    }
+}
+
+/// Tracks which notes are currently playing (for note-off)
+#[derive(Clone)]
+struct ActiveNotes {
+    /// Bit flags for active notes (128 bits = 128 MIDI notes)
+    playing: [u64; 2],
+    /// End beat for each playing note
+    end_beats: [f64; 128],
+}
+
+impl Default for ActiveNotes {
+    fn default() -> Self {
+        Self {
+            playing: [0; 2],
+            end_beats: [0.0; 128],
+        }
+    }
+}
+
+impl ActiveNotes {
+    fn is_playing(&self, pitch: u8) -> bool {
+        let idx = pitch as usize;
+        let word = idx / 64;
+        let bit = idx % 64;
+        (self.playing[word] & (1u64 << bit)) != 0
+    }
+
+    fn set_playing(&mut self, pitch: u8, end_beat: f64) {
+        let idx = pitch as usize;
+        let word = idx / 64;
+        let bit = idx % 64;
+        self.playing[word] |= 1u64 << bit;
+        self.end_beats[idx] = end_beat;
+    }
+
+    fn clear_playing(&mut self, pitch: u8) {
+        let idx = pitch as usize;
+        let word = idx / 64;
+        let bit = idx % 64;
+        self.playing[word] &= !(1u64 << bit);
+    }
+}
+
+impl StagedProgram {
+    /// Load a beautiful 4-bar test program (C major arpeggio pattern)
+    fn load_test_program(&mut self) {
+        // Set program name and version
+        self.set_name("C Major Arpeggio");
+        self.version = 1;
+
+        nih_log!("========================================");
+        nih_log!("Loading program: {} v{}", self.get_name(), self.version);
+        nih_log!("========================================");
+
+        // Beautiful 4-bar piece: arpeggiated C major with melody
+        // Bar 1: C E G C' (ascending arpeggio)
+        // Bar 2: D' C' B A (descending melody)
+        // Bar 3: G (half) E (half)
+        // Bar 4: C (whole note resolution)
+
+        let notes_data: [(u8, f64, f64, f32); 11] = [
+            // Bar 1: C E G C' (beat 0-4)
+            (60, 0.0, 1.0, 0.8),   // C4
+            (64, 1.0, 1.0, 0.8),   // E4
+            (67, 2.0, 1.0, 0.8),   // G4
+            (72, 3.0, 1.0, 0.8),   // C5
+            // Bar 2: D' C' B A (beat 4-8)
+            (74, 4.0, 1.0, 0.8),   // D5
+            (72, 5.0, 1.0, 0.8),   // C5
+            (71, 6.0, 1.0, 0.8),   // B4
+            (69, 7.0, 1.0, 0.8),   // A4
+            // Bar 3: G (half) E (half) (beat 8-12)
+            (67, 8.0, 2.0, 0.8),   // G4 (half note)
+            (64, 10.0, 2.0, 0.8),  // E4 (half note)
+            // Bar 4: C (whole) (beat 12-16)
+            (60, 12.0, 4.0, 0.8),  // C4 (whole note)
+        ];
+
+        self.note_count = notes_data.len();
+        self.length_bars = 4.0;
+        self.length_beats = 16.0;  // 4 bars * 4 beats
+
+        nih_log!("Program structure: {} bars ({} beats)", self.length_bars, self.length_beats);
+        nih_log!("Notes ({}):", self.note_count);
+
+        for (i, (pitch, start, length, vel)) in notes_data.iter().enumerate() {
+            self.notes[i] = ProgramNote {
+                pitch: *pitch,
+                start_beat: *start,
+                length_beats: *length,
+                velocity: *vel,
+                active: true,
+            };
+            let bar = (*start as i32 / 4) + 1;
+            let beat = (*start % 4.0) + 1.0;
+            nih_log!("  [{:2}] {} @ bar {} beat {:.1} (len: {} beats)",
+                i, Self::pitch_to_name(*pitch), bar, beat, length);
+        }
+
+        // Clear remaining slots
+        for i in self.note_count..MAX_NOTES {
+            self.notes[i].active = false;
+        }
+
+        self.loaded = true;
+        nih_log!("========================================");
+        nih_log!("Program ready: {} v{}", self.get_name(), self.version);
+        nih_log!("========================================");
+    }
+
+    /// Convert MIDI pitch to note name for display
+    fn pitch_to_name(pitch: u8) -> &'static str {
+        const NAMES: [&str; 128] = [
+            "C-1", "C#-1", "D-1", "D#-1", "E-1", "F-1", "F#-1", "G-1", "G#-1", "A-1", "A#-1", "B-1",
+            "C0", "C#0", "D0", "D#0", "E0", "F0", "F#0", "G0", "G#0", "A0", "A#0", "B0",
+            "C1", "C#1", "D1", "D#1", "E1", "F1", "F#1", "G1", "G#1", "A1", "A#1", "B1",
+            "C2", "C#2", "D2", "D#2", "E2", "F2", "F#2", "G2", "G#2", "A2", "A#2", "B2",
+            "C3", "C#3", "D3", "D#3", "E3", "F3", "F#3", "G3", "G#3", "A3", "A#3", "B3",
+            "C4", "C#4", "D4", "D#4", "E4", "F4", "F#4", "G4", "G#4", "A4", "A#4", "B4",
+            "C5", "C#5", "D5", "D#5", "E5", "F5", "F#5", "G5", "G#5", "A5", "A#5", "B5",
+            "C6", "C#6", "D6", "D#6", "E6", "F6", "F#6", "G6", "G#6", "A6", "A#6", "B6",
+            "C7", "C#7", "D7", "D#7", "E7", "F7", "F#7", "G7", "G#7", "A7", "A#7", "B7",
+            "C8", "C#8", "D8", "D#8", "E8", "F8", "F#8", "G8", "G#8", "A8", "A#8", "B8",
+            "C9", "C#9", "D9", "D#9", "E9", "F9", "F#9", "G9",
+        ];
+        if (pitch as usize) < NAMES.len() {
+            NAMES[pitch as usize]
+        } else {
+            "???"
+        }
+    }
 }
 
 /// Transport state from process context
@@ -40,6 +232,10 @@ struct SharedState {
     buffer_size: u32,
     plugin_api: PluginApi,
     current_tab: Tab,
+    // Program playback state
+    program: StagedProgram,
+    active_notes: ActiveNotes,
+    last_program_beat: f64,  // Last beat position we processed (for note triggers)
 }
 
 impl Default for SharedState {
@@ -52,6 +248,9 @@ impl Default for SharedState {
             buffer_size: 512,
             plugin_api: PluginApi::Clap,
             current_tab: Tab::Live,
+            program: StagedProgram::default(),
+            active_notes: ActiveNotes::default(),
+            last_program_beat: -1.0,
         }
     }
 }
@@ -370,7 +569,7 @@ impl Plugin for Skipper {
         },
     ];
     const MIDI_INPUT: MidiConfig = MidiConfig::None;
-    const MIDI_OUTPUT: MidiConfig = MidiConfig::None;
+    const MIDI_OUTPUT: MidiConfig = MidiConfig::Basic;  // Enable MIDI output for note playback
     const SAMPLE_ACCURATE_AUTOMATION: bool = false;
 
     type SysExMessage = ();
