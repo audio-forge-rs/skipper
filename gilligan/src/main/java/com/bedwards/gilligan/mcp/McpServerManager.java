@@ -1,7 +1,9 @@
 package com.bedwards.gilligan.mcp;
 
 import com.bedwards.gilligan.BitwigApiFacade;
+import com.bedwards.gilligan.GilliganService;
 import com.bedwards.gilligan.mcp.tool.*;
+import com.bedwards.gilligan.rest.RestApiServlet;
 import com.bitwig.extension.controller.api.ControllerHost;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.modelcontextprotocol.server.McpServer;
@@ -33,6 +35,7 @@ public class McpServerManager {
 
     private final ControllerHost host;
     private final BitwigApiFacade facade;
+    private final GilliganService service;
     private Server jettyServer;
     private McpSyncServer mcpServer;
     private int port = DEFAULT_PORT;
@@ -40,6 +43,7 @@ public class McpServerManager {
     public McpServerManager(ControllerHost host, BitwigApiFacade facade) {
         this.host = host;
         this.facade = facade;
+        this.service = new GilliganService(facade, host);
     }
 
     public void setPort(int port) {
@@ -86,6 +90,12 @@ public class McpServerManager {
             // Set up servlet context
             ServletContextHandler context = new ServletContextHandler();
             context.setContextPath("/");
+
+            // REST API endpoint (simple JSON, no sessions)
+            context.addServlet(new ServletHolder(new RestApiServlet(service)), "/api/*");
+            host.println("Gilligan: REST API at http://localhost:" + port + "/api/");
+
+            // MCP SSE endpoint (kept for compatibility)
             context.addServlet(new ServletHolder(transportProvider), "/*");
             jettyServer.setHandler(context);
 
@@ -107,7 +117,7 @@ public class McpServerManager {
 
     private int getToolCount() {
         // Count of registered tools
-        return 9; // transport(4) + track(4) + device(1)
+        return 11; // transport(4) + track(4) + device(1) + snapshot(1) + stage(1)
     }
 
     private void registerTools() {
@@ -125,6 +135,10 @@ public class McpServerManager {
 
         // Device tools
         mcpServer.addTool(GetSelectedDeviceTool.create(facade, host));
+
+        // Workflow-optimized tools (minimize token usage)
+        mcpServer.addTool(GetProjectSnapshotTool.create(facade, host));
+        mcpServer.addTool(StageProgramsTool.create(facade, host));
     }
 
     public void stop() {

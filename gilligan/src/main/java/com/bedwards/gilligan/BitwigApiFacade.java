@@ -117,17 +117,17 @@ public class BitwigApiFacade {
         // Set up observers for each track in the bank
         for (int i = 0; i < 16; i++) {
             Track track = trackBank.getItemAt(i);
-            final int index = i;
+            final int trackIndex = i;
 
-            track.name().addValueObserver(name -> tracks.get(index).name = name);
+            track.name().addValueObserver(name -> tracks.get(trackIndex).name = name);
             track.color().addValueObserver((r, g, b) -> {
-                tracks.get(index).color = String.format("#%02X%02X%02X",
+                tracks.get(trackIndex).color = String.format("#%02X%02X%02X",
                     (int)(r * 255), (int)(g * 255), (int)(b * 255));
             });
-            track.position().addValueObserver(pos -> tracks.get(index).position = pos);
-            track.isGroup().addValueObserver(isGroup -> tracks.get(index).isGroup = isGroup);
-            track.exists().addValueObserver(exists -> tracks.get(index).exists = exists);
-            track.trackType().addValueObserver(type -> tracks.get(index).trackType = type);
+            track.position().addValueObserver(pos -> tracks.get(trackIndex).position = pos);
+            track.isGroup().addValueObserver(isGroup -> tracks.get(trackIndex).isGroup = isGroup);
+            track.exists().addValueObserver(exists -> tracks.get(trackIndex).exists = exists);
+            track.trackType().addValueObserver(type -> tracks.get(trackIndex).trackType = type);
 
             track.name().markInterested();
             track.color().markInterested();
@@ -135,6 +135,24 @@ public class BitwigApiFacade {
             track.isGroup().markInterested();
             track.exists().markInterested();
             track.trackType().markInterested();
+
+            // Create device bank for this track (8 devices)
+            DeviceBank deviceBank = track.createDeviceBank(8);
+            for (int j = 0; j < 8; j++) {
+                Device device = deviceBank.getDevice(j);
+                final int deviceIndex = j;
+
+                device.name().addValueObserver(name ->
+                    tracks.get(trackIndex).devices.get(deviceIndex).name = name);
+                device.exists().addValueObserver(exists ->
+                    tracks.get(trackIndex).devices.get(deviceIndex).exists = exists);
+                device.isPlugin().addValueObserver(isPlugin ->
+                    tracks.get(trackIndex).devices.get(deviceIndex).isPlugin = isPlugin);
+
+                device.name().markInterested();
+                device.exists().markInterested();
+                device.isPlugin().markInterested();
+            }
         }
     }
 
@@ -253,6 +271,73 @@ public class BitwigApiFacade {
         host.println("Gilligan: selectDeviceByName not fully implemented yet");
     }
 
+    /**
+     * Get comprehensive project snapshot in a single call.
+     * Designed to minimize MCP token usage by returning all needed context at once.
+     */
+    public Map<String, Object> getProjectSnapshot() {
+        Map<String, Object> snapshot = new HashMap<>();
+
+        // Transport state
+        Map<String, Object> transportState = new HashMap<>();
+        transportState.put("tempo", tempo);
+        transportState.put("playing", isPlaying);
+        transportState.put("recording", isRecording);
+        transportState.put("positionBeats", positionBeats);
+        transportState.put("timeSignature", timeSignatureNumerator + "/" + timeSignatureDenominator);
+        snapshot.put("transport", transportState);
+
+        // Tracks with device info
+        List<Map<String, Object>> trackList = new ArrayList<>();
+        for (TrackInfo info : tracks) {
+            if (info.exists) {
+                Map<String, Object> track = new HashMap<>();
+                track.put("name", info.name);
+                track.put("color", info.color);
+                track.put("position", info.position);
+                track.put("trackType", info.trackType);
+
+                // Device info from the track's device bank
+                List<Map<String, Object>> devices = new ArrayList<>();
+                for (DeviceInfo deviceInfo : info.devices) {
+                    if (deviceInfo.exists) {
+                        Map<String, Object> device = new HashMap<>();
+                        device.put("name", deviceInfo.name);
+                        device.put("isPlugin", deviceInfo.isPlugin);
+                        devices.add(device);
+                    }
+                }
+                track.put("devices", devices);
+
+                // Check if Skipper is present and what instrument follows
+                String skipperStatus = null;
+                String instrumentAfterSkipper = null;
+                for (int i = 0; i < info.devices.size(); i++) {
+                    DeviceInfo d = info.devices.get(i);
+                    if (d.exists && "Skipper".equals(d.name)) {
+                        skipperStatus = "present";
+                        // Look for instrument after Skipper
+                        for (int j = i + 1; j < info.devices.size(); j++) {
+                            DeviceInfo next = info.devices.get(j);
+                            if (next.exists && !next.name.isEmpty()) {
+                                instrumentAfterSkipper = next.name;
+                                break;
+                            }
+                        }
+                        break;
+                    }
+                }
+                track.put("skipper", skipperStatus);
+                track.put("instrument", instrumentAfterSkipper);
+
+                trackList.add(track);
+            }
+        }
+        snapshot.put("tracks", trackList);
+
+        return snapshot;
+    }
+
     // Track info container
     private static class TrackInfo {
         String name = "";
@@ -261,5 +346,20 @@ public class BitwigApiFacade {
         boolean isGroup = false;
         boolean exists = false;
         String trackType = "";
+        List<DeviceInfo> devices = new ArrayList<>();
+
+        TrackInfo() {
+            // Pre-allocate device slots (8 devices per track)
+            for (int i = 0; i < 8; i++) {
+                devices.add(new DeviceInfo());
+            }
+        }
+    }
+
+    // Device info container
+    private static class DeviceInfo {
+        String name = "";
+        boolean exists = false;
+        boolean isPlugin = false;
     }
 }
