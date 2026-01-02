@@ -277,8 +277,13 @@ def cmd_workflow(args):
     SKIPPER_STAGING_DIR.mkdir(parents=True, exist_ok=True)
     staging_file = SKIPPER_STAGING_DIR / f"{track}.json"
 
-    # Add metadata
-    program["name"] = args.name or f"{track} Program"
+    # Add metadata - extract title from ABC if not provided
+    abc_title = None
+    for line in abc.split('\n'):
+        if line.startswith('T:'):
+            abc_title = line[2:].strip()
+            break
+    program["name"] = args.name or abc_title or f"{track} Program"
     program["version"] = 1
 
     with open(staging_file, 'w') as f:
